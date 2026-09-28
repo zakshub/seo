@@ -1,0 +1,3 @@
+export const navigation = ['Dashboard', 'AI Team', 'Opportunities', 'Projects', 'Design', 'Development', 'SEO Growth', 'Analytics', 'Deployments', 'Finance', 'Knowledge', 'Approvals', 'Activity', 'Settings'] as const;
+export const glossary = { indexing: 'Whether Google has added the page to its searchable database.', ctr: 'The percentage of people who saw a search result and clicked it.', canonicalUrl: 'Tells search engines which similar page version is the main one.' } as const;
+export type ActivityProjection = { eventId: string; occurredAt: string; status: string; message: string; verified: true };
