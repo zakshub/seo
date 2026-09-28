@@ -1,7 +1,8 @@
 packages:
   - apps/*
   - packages/*
-onlyBuiltDependencies:
-  - esbuild
+nodeLinker: hoisted
 allowBuilds:
-  esbuild: set this to true or false
+  '@swc/core': true
+  esbuild: true
+  protobufjs: true

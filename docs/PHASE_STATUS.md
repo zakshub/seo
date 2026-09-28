@@ -2,11 +2,11 @@
 
 | Phase | Status | Evidence | Next dependency |
 |---|---|---|---|
-| 0 — Foundation | In progress | Documentation constitution; typed contracts; policy engine; PostgreSQL migration/outbox boundary; provider-unavailable adapters; reference-aligned responsive Next.js Control Center; Docker/WSL installed; PostgreSQL, Redis and Temporal ports healthy; foundation migration applied; NestJS API health/overview and authenticated idempotent research-run command verified; production build, live browser QA, and 6 workflow/policy tests passing | Temporal worker dispatch and Control Center API projection wiring |
-| 1 — Control Center/workflows | Not started | — | Phase 0 contracts/persistence |
+| 0 — Foundation | In progress | Documentation constitution; typed contracts; policy engine; PostgreSQL migration/outbox boundary; provider-unavailable adapters; reference-aligned responsive Next.js Control Center; Docker/WSL installed; PostgreSQL, Redis and Temporal healthy; foundation migration applied; authenticated idempotent run creation; Temporal dispatch; worker activity; PostgreSQL-backed dashboard projection; production build and 6 workflow/policy tests passing | Approve and implement the first permitted free-public-web research source adapter |
+| 1 — Control Center/workflows | In progress | Real overview, runtime health, workflow state and immutable event projections render from the API; verified run transitioned `created` → `queued` → `waiting` with a genuine `provider.unavailable` event | Owner-facing authenticated start/pause/resume/stop controls and SSE live updates |
 | 2 — Opportunity research | Not started | — | Phase 1 workflow |
 | 3 — Product strategy | Not started | — | Phase 2 evidence |
 | 4 — Figma/design review | Not started | — | Verified Figma/designer access and license review |
 | 5–12 | Not started | — | Earlier phase acceptance |
 
-Known constraints: no external research/LLM provider is configured; research runs can be persisted but cannot perform source work; the Control Center transport and Temporal worker are not yet wired to the API. GitHub is canonical and receives coherent commits before local handoff.
+Known constraints: no external research/LLM provider is configured, so research runs stop honestly in `waiting` and cannot yet produce opportunities. The Control Center uses request-time API projections; SSE and owner-facing command controls are not implemented. The verified local run created no fabricated evidence, metrics, opportunities, or projects. GitHub is canonical and receives coherent commits before local handoff.

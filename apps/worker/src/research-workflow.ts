@@ -1,10 +1,5 @@
-import { canPresentCandidates, type Opportunity } from '@venture/contracts';
-import type { PublicResearchSource } from '@venture/providers';
-export async function collectResearch(source: PublicResearchSource, query: { language: string; market: string }): Promise<{ status: 'unavailable' | 'incomplete' | 'ready'; reason?: string }> {
-  const result = await source.research(query);
-  if (result.availability !== 'available') return result.reason
-    ? { status: 'unavailable', reason: result.reason }
-    : { status: 'unavailable' };
-  return { status: 'incomplete', reason: 'Source evidence must be persisted and validated before candidate evaluation.' };
-}
-export function candidatesReady(opportunities: Opportunity[]): boolean { return canPresentCandidates({ id: 'validation', state: 'running', language: 'en', market: 'global', paidBudgetCents: 0, events: [], opportunities }); }
+import { proxyActivities } from '@temporalio/workflow';
+import type * as activities from './research-activities.js';
+const { performResearch } = proxyActivities<typeof activities>({ startToCloseTimeout: '30 seconds', retry: { maximumAttempts: 3 } });
+export type ResearchWorkflowInput = { runId: string; language: 'en'; market: 'global' };
+export async function researchWorkflow(input: ResearchWorkflowInput) { return performResearch(input); }
