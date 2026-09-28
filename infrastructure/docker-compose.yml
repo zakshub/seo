@@ -14,7 +14,7 @@ services:
     image: temporalio/auto-setup:1.28.1
     depends_on: [postgres]
     environment:
-      DB: postgresql
+      DB: postgres12
       DB_PORT: 5432
       POSTGRES_USER: venture
       POSTGRES_PWD: venture

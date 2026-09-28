@@ -6,7 +6,10 @@
   "scripts": {
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "infra:up": "docker compose -f infrastructure/docker-compose.yml up -d",
+    "infra:status": "docker compose -f infrastructure/docker-compose.yml ps",
+    "infra:down": "docker compose -f infrastructure/docker-compose.yml down"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
