@@ -2,7 +2,7 @@
 
 | Phase | Status | Evidence | Next dependency |
 |---|---|---|---|
-| 0 — Foundation | In progress | Documentation constitution; typed contracts; policy engine; PostgreSQL migration/outbox boundary; provider-unavailable adapters; responsive Next.js Control Center; production build and 6 workflow/policy tests passing | Docker Desktop and runtime application wiring |
+| 0 — Foundation | In progress | Documentation constitution; typed contracts; policy engine; PostgreSQL migration/outbox boundary; provider-unavailable adapters; reference-aligned responsive Next.js Control Center; production build, live browser QA, and 6 workflow/policy tests passing | Docker Desktop and runtime application wiring |
 | 1 — Control Center/workflows | Not started | — | Phase 0 contracts/persistence |
 | 2 — Opportunity research | Not started | — | Phase 1 workflow |
 | 3 — Product strategy | Not started | — | Phase 2 evidence |
