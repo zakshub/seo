@@ -25,6 +25,13 @@ export class DatabaseService implements OnModuleDestroy {
     ]);
     return { runs: runs.rows, events: events.rows };
   }
+  async opportunities() {
+    const result = await this.pool.query(`select o.id,o.title,o.lifecycle,o.rationale,o.scorecard,o.limitations,o.created_at as "createdAt",
+      coalesce(json_agg(json_build_object('id',e.id,'sourceUrl',e.source_url,'capturedAt',e.captured_at,'reference',e.reference,'confidence',e.confidence)) filter (where e.id is not null),'[]') as evidence
+      from opportunities o left join opportunity_evidence oe on oe.opportunity_id=o.id left join evidence_items e on e.id=oe.evidence_id
+      group by o.id order by (o.scorecard->>'total')::int desc nulls last,o.created_at desc limit 25`);
+    return result.rows;
+  }
   async workflow(id: string) {
     const result = await this.pool.query('select id,state,temporal_workflow_id as "temporalWorkflowId",created_at as "createdAt",updated_at as "updatedAt" from workflow_runs where id=$1', [id]);
     return result.rows[0];

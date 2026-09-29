@@ -6,9 +6,10 @@ import { TemporalService } from './temporal.service.js';
 @Controller()
 export class AppController {
   constructor(private readonly db: DatabaseService, private readonly temporal: TemporalService) {}
-  @Get('health') async health() { return { status: 'ok', database: 'available', databaseTime: await this.db.health(), temporal: await this.temporal.availability(), researchProvider: 'unavailable', reason: 'No approved public research source is configured.' }; }
+  @Get('health') async health() { return { status: 'ok', database: 'available', databaseTime: await this.db.health(), temporal: await this.temporal.availability(), researchProvider: 'available', researchProviderName: 'stackexchange-public-api', researchLimitation: 'Developer problem-demand signal; not Google search volume or SERP evidence.' }; }
   @Get('overview') async overview() { return this.db.overview(); }
   @Get('activity') async activity() { return this.db.activity(); }
+  @Get('opportunities') async opportunities() { return this.db.opportunities(); }
   @Post('workflows/research') async start(@Headers('x-local-owner-token') token: string | undefined, @Headers('idempotency-key') key: string | undefined, @Body() body: { language?:string; market?:string }) {
     const expected = process.env.LOCAL_OWNER_TOKEN;
     if (!expected || token !== expected) throw new HttpException('Local owner authentication is required.', HttpStatus.UNAUTHORIZED);

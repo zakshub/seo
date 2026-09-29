@@ -1,3 +1,7 @@
 # ADR 0004: Public-source research in first slice
 
 Status: Accepted. The first slice uses only permitted public sources, captures provenance, observes source policy/rate limits, and surfaces failure/unavailability. Paid provider calls require separate approval and a positive budget.
+
+The first implemented adapter is the official Stack Exchange API `GET /2.3/questions`, restricted to English/global research and Stack Overflow questions from the last 30 days. It makes one request per workflow and stores question URL, title, tags, engagement metrics, capture time, provider identity, confidence, integrity hash, returned quota, and any requested backoff. It preserves Stack Exchange attribution and follows the official rule not to repeat semantically identical requests more than once per minute. A returned `backoff` prevents another request for that duration; usable items in the same response may still be processed.
+
+This evidence is classified only as a developer problem-demand signal. It is not keyword volume, SERP weakness, broad-market demand, or proof of monetization. The initial deterministic scorecard therefore assigns low confidence and competitor/monetization scores and recommends `watch` or `research_further`, never automatic build approval. References: [questions API](https://api.stackexchange.com/docs/questions), [throttle/backoff policy](https://api.stackexchange.com/docs/throttle), and [API terms](https://stackoverflow.com/legal/api-terms-of-use).

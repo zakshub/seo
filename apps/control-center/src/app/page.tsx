@@ -9,16 +9,18 @@ const agents = [
 type Overview = { workflows: number; opportunities: number; projects: number; approvals: number };
 type Health = { database: string; temporal: string; researchProvider: string; reason: string };
 type Activity = { runs: Array<{ id:string; state:string; updatedAt:string }>; events: Array<{ id:string; eventType:string; aggregateId:string; payload:Record<string,string>; occurredAt:string }> };
+type Opportunity = { id:string; title:string; lifecycle:string; rationale:string; scorecard:{total?:number}; limitations:string[]; evidence:Array<{sourceUrl:string;capturedAt:string;confidence:number}> };
 const apiBase = process.env.API_INTERNAL_URL ?? 'http://127.0.0.1:4000/api';
 async function runtime() {
   try {
-    const [overview,health,activity] = await Promise.all([
+    const [overview,health,activity,opportunities] = await Promise.all([
       fetch(`${apiBase}/overview`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json() as Promise<Overview>}),
       fetch(`${apiBase}/health`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json() as Promise<Health>}),
-      fetch(`${apiBase}/activity`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json() as Promise<Activity>})
+      fetch(`${apiBase}/activity`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json() as Promise<Activity>}),
+      fetch(`${apiBase}/opportunities`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error();return r.json() as Promise<Opportunity[]>})
     ]);
-    return { overview,health,activity,available:true as const };
-  } catch { return { overview:{workflows:0,opportunities:0,projects:0,approvals:0},health:null,activity:{runs:[],events:[]},available:false as const }; }
+    return { overview,health,activity,opportunities,available:true as const };
+  } catch { return { overview:{workflows:0,opportunities:0,projects:0,approvals:0},health:null,activity:{runs:[],events:[]},opportunities:[],available:false as const }; }
 }
 
 export default async function Dashboard(){const data=await runtime(); const active=data.activity.runs[0]; const kpis = [['◎',String(data.overview.projects),'Projects','Persisted projects'],['♜',String(data.overview.workflows),'Workflow Runs','Persisted workflow history'],['♧',String(data.overview.opportunities),'Opportunities Found','Evidence-backed only'],['✓',String(data.overview.approvals),'Pending Approvals','Owner decisions needed'],['$','$0','Total Revenue','No recorded revenue']] as const; return <div className="shell">
@@ -35,7 +37,7 @@ export default async function Dashboard(){const data=await runtime(); const acti
     </header>
 
     <section className="hero card">
-      <div className="start"><div className="title"><i>ϟ</i><span><h1>Start the AI Web Company</h1><p>Let the AI find opportunities, design, build, deploy and grow websites for you.</p></span></div><button disabled>▶ &nbsp; Start Now<small>{data.available?'Research source configuration is required':'Local API is unavailable'}</small></button></div>
+      <div className="start"><div className="title"><i>ϟ</i><span><h1>Start the AI Web Company</h1><p>Let the AI find opportunities, design, build, deploy and grow websites for you.</p></span></div><button disabled>▶ &nbsp; Start Now<small>{data.available?'Owner-facing start control is the next milestone':'Local API is unavailable'}</small></button></div>
       <div className="journey find"><i>⌕</i><b>Find Opportunities</b><p>AI searches permitted public sources for evidence-backed ideas.</p></div>
       <div className="journey build"><i>‹/›</i><b>Build &amp; Launch</b><p>AI designs and develops only after your approval.</p></div>
       <div className="journey grow"><i>↗</i><b>Rank &amp; Grow</b><p>AI improves projects using genuine performance data.</p></div>
@@ -46,7 +48,7 @@ export default async function Dashboard(){const data=await runtime(); const acti
 
     <div className="grid">
       <section className="card current"><div className="head"><h2>Current Activity</h2><em className="paused">○ {active?.state ?? 'Not started'}</em></div><div className="empty"><i>⌕</i><h3>{active?'Latest persisted workflow':'No workflow is running'}</h3><p>{active?`Run ${active.id.slice(0,8)} is ${active.state}. No opportunity is claimed until evidence is persisted.`:'Real agent events appear here after a permitted research source is connected.'}</p><div className="steps"><span><b>Database</b><small>{data.health?.database ?? 'Unavailable'}</small></span><span><b>Temporal</b><small>{data.health?.temporal ?? 'Unavailable'}</small></span><span><b>Research provider</b><small>{data.health?.researchProvider ?? 'Unavailable'}</small></span><span><b>Paid budget</b><small>$0</small></span></div></div></section>
-      <section className="card portfolio"><div className="head"><h2>My Websites <span>(Portfolio)</span></h2><button>View All ›</button></div><div className="noProject"><i>□</i><span><b>No projects yet</b><small>An approved opportunity will become your first project.</small></span></div><Provider name="GitHub" detail="Connected for source control" state="Available"/><Provider name="Figma" detail="Canonical workspace planned for Phase 4" state="Not configured" off/><Provider name="Deployment" detail="No VPS or domain connection" state="Unavailable" off/></section>
+      <section className="card portfolio"><div className="head"><h2>Opportunity Candidates</h2><button>View All ›</button></div>{data.opportunities.length?data.opportunities.slice(0,3).map(item=><div className="candidate" key={item.id}><span><b>{item.title}</b><small>{item.rationale}</small></span><em>{item.scorecard.total ?? '—'}/100</em><a href={item.evidence[0]?.sourceUrl} target="_blank" rel="noreferrer">Evidence ↗</a></div>):<div className="noProject"><i>□</i><span><b>No opportunities yet</b><small>A real research run must store attributed evidence first.</small></span></div>}<Provider name="Research source" detail="Stack Exchange public API; developer demand signal only" state={data.health?.researchProvider ?? 'Unavailable'} off={data.health?.researchProvider!=='available'}/></section>
       <section className="card recent"><div className="head"><h2>Recent Activity</h2><button>View All Activity ›</button></div>{data.activity.events.length?data.activity.events.slice(0,4).map(event=><div className="event" key={event.id}><i>✓</i><span><b>{event.eventType}</b><small>{event.payload.reason ?? `Workflow ${event.aggregateId?.slice(0,8) ?? ''}`}</small></span><time>{new Date(event.occurredAt).toLocaleString('en-GB',{timeZone:'Asia/Karachi'})}</time></div>):<div className="event muted"><i>○</i><span><b>No runtime events yet</b><small>This feed never displays simulated agent activity</small></span></div>}</section>
       <section className="card performance"><div className="head"><h2>SEO &amp; Performance <span>(All Websites)</span></h2><div className="range"><b>7D</b><b className="on">30D</b><b>90D</b></div></div><div className="perf"><Metric value="—" label="Total Clicks" detail="Search Console not connected"/><Metric value="—" label="Impressions" detail="No measured data"/><Metric value="—" label="Average CTR" detail={glossary.ctr}/><Metric value="0" label="Keywords Ranking" detail="No live websites"/></div></section>
     </div>
