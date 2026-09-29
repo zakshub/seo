@@ -4,3 +4,7 @@
 .candidate small { color:var(--muted); font-size:9px; line-height:1.35; margin-top:3px; }
 .candidate em { font-style:normal; color:#6738ed; font-weight:800; }
 .candidate a { grid-column:1/-1; color:#2868e8; font-size:9px; text-decoration:none; }
+.candidateActions { grid-column:1/-1; display:flex; gap:5px; align-items:center; }
+.candidateActions button { border:1px solid var(--line); border-radius:6px; background:#fff; padding:5px 7px; font-size:8px; cursor:pointer; }
+.candidateActions button:first-child { background:#0aa866; border-color:#0aa866; color:#fff; }
+.candidateActions small { color:var(--muted); margin-left:auto; }

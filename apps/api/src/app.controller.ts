@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpException, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DatabaseService } from './database.service.js';
 import { TemporalService } from './temporal.service.js';
@@ -10,6 +10,7 @@ export class AppController {
   @Get('overview') async overview() { return this.db.overview(); }
   @Get('activity') async activity() { return this.db.activity(); }
   @Get('opportunities') async opportunities() { return this.db.opportunities(); }
+  @Get('approvals') async approvals() { return this.db.approvals(); }
   @Post('workflows/research') async start(@Headers('x-local-owner-token') token: string | undefined, @Headers('idempotency-key') key: string | undefined, @Body() body: { language?:string; market?:string }) {
     const expected = process.env.LOCAL_OWNER_TOKEN;
     if (!expected || token !== expected) throw new HttpException('Local owner authentication is required.', HttpStatus.UNAUTHORIZED);
@@ -21,5 +22,13 @@ export class AppController {
       else await this.db.markDispatchUnavailable(run.id, dispatch.reason);
     }
     return this.db.workflow(run.id);
+  }
+  @Post('approvals/:id/decision') async decide(@Headers('x-local-owner-token') token: string | undefined, @Param('id') id: string, @Body() body: { decision?:string; opportunityId?:string; note?:string }) {
+    const expected = process.env.LOCAL_OWNER_TOKEN;
+    if (!expected || token !== expected) throw new HttpException('Local owner authentication is required.',HttpStatus.UNAUTHORIZED);
+    if (!['approve','reject','request_changes'].includes(body.decision ?? '')) throw new HttpException('Decision must be approve, reject, or request_changes.',HttpStatus.BAD_REQUEST);
+    if (!body.opportunityId) throw new HttpException('An opportunity must be selected.',HttpStatus.BAD_REQUEST);
+    // The database transition requires this exact pending, scoped approval before project creation.
+    return this.db.decideApproval(id,body.decision as 'approve'|'reject'|'request_changes',body.opportunityId,body.note);
   }
 }

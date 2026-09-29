@@ -1,6 +1,6 @@
 # Local Development
 
-Prerequisites: Node 24+, pnpm 11+, Git, Docker Desktop with WSL 2 (for PostgreSQL/Redis/Temporal), and an authenticated GitHub CLI only for repository operations. Copy `.env.example` to `.env` locally; never commit it. Run `pnpm infra:up`, install with `pnpm install`, then run the API, worker, and Control Center via workspace scripts. Verify the three runtime ports with `pnpm infra:status`: PostgreSQL `5432`, Redis `6379`, and Temporal `7233`.
+Prerequisites: Node 24+, pnpm 11+, Git, Docker Desktop with WSL 2 (for PostgreSQL/Redis/Temporal), and an authenticated GitHub CLI only for repository operations. Install once with `pnpm install`, then use `pnpm dev` as the normal startup command. It starts Docker Desktop when needed, starts local infrastructure, applies migrations, creates an in-memory owner token shared only by local child processes, and launches API, worker, and Control Center. Open `http://localhost:3000`; use `Ctrl+C` to stop application processes. `pnpm dev:status` reports UI, API, PostgreSQL and Temporal health.
 
 No provider credential is needed for the current Stack Exchange public API adapter. Apply `packages/db/migrations/0001_foundation.sql` and then `0002_research_candidates.sql` to the local `venture_os` database before running application services. Database migrations and test data must be explicit and local; do not substitute production services.
 

@@ -27,10 +27,39 @@ export class DatabaseService implements OnModuleDestroy {
   }
   async opportunities() {
     const result = await this.pool.query(`select o.id,o.title,o.lifecycle,o.rationale,o.scorecard,o.limitations,o.created_at as "createdAt",
+      (select ar.id from approval_requests ar where ar.workflow_run_id=o.workflow_run_id and ar.state='pending' order by ar.created_at desc limit 1) as "approvalId",
       coalesce(json_agg(json_build_object('id',e.id,'sourceUrl',e.source_url,'capturedAt',e.captured_at,'reference',e.reference,'confidence',e.confidence)) filter (where e.id is not null),'[]') as evidence
       from opportunities o left join opportunity_evidence oe on oe.opportunity_id=o.id left join evidence_items e on e.id=oe.evidence_id
       group by o.id order by (o.scorecard->>'total')::int desc nulls last,o.created_at desc limit 25`);
     return result.rows;
+  }
+  async approvals() {
+    const result = await this.pool.query(`select id,workflow_run_id as "workflowRunId",action,input_snapshot as "inputSnapshot",state,expires_at as "expiresAt",created_at as "createdAt" from approval_requests order by created_at desc limit 25`);
+    return result.rows;
+  }
+  async decideApproval(id: string, decision: 'approve'|'reject'|'request_changes', opportunityId: string, note?: string) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      const approval = await client.query<{ workflowRunId:string; workspaceId:string; inputSnapshot:{candidateIds?:string[]} }>(`select workflow_run_id as "workflowRunId",workspace_id as "workspaceId",input_snapshot as "inputSnapshot" from approval_requests where id=$1 and state='pending' for update`,[id]);
+      const row=approval.rows[0];
+      if (!row) throw new Error('Approval is not pending or does not exist.');
+      if (!row.inputSnapshot.candidateIds?.includes(opportunityId)) throw new Error('Selected opportunity is not part of this approval request.');
+      const approvalState=decision==='approve'?'approved':decision==='reject'?'rejected':'changes_requested';
+      await client.query('update approval_requests set state=$2 where id=$1',[id,approvalState]);
+      await client.query(`insert into outbox_events(id,aggregate_type,aggregate_id,event_type,event_version,payload,occurred_at) values($1,'approval',$2,'approval.decided',1,$3::jsonb,now())`,[randomUUID(),id,JSON.stringify({decision,opportunityId,note:note?.slice(0,500)})]);
+      if (decision==='approve') {
+        const projectId=randomUUID();
+        await client.query(`update opportunities set lifecycle=case when id=$1 then 'approved' else 'rejected' end where workflow_run_id=$2`,[opportunityId,row.workflowRunId]);
+        await client.query(`insert into projects(id,workspace_id,opportunity_id,state) values($1,$2,$3,'design_preparation_queued') on conflict(opportunity_id) do nothing`,[projectId,row.workspaceId,opportunityId]);
+        await client.query(`update workflow_runs set state='completed',updated_at=now() where id=$1`,[row.workflowRunId]);
+        await client.query(`insert into outbox_events(id,aggregate_type,aggregate_id,event_type,event_version,payload,occurred_at) values($1,'project',$2,'project.created',1,$3::jsonb,now()),($4,'project',$2,'design.preparation_queued',1,$5::jsonb,now())`,[randomUUID(),projectId,JSON.stringify({opportunityId,approvalId:id}),randomUUID(),JSON.stringify({projectId,figma:'unavailable',reason:'Figma integration is deferred until Phase 4 access verification.'})]);
+        await client.query('commit'); return { approvalId:id,decision,projectId,state:'design_preparation_queued' };
+      }
+      await client.query(`update opportunities set lifecycle=$2 where id=$1`,[opportunityId,decision==='reject'?'rejected':'researched']);
+      await client.query(`update workflow_runs set state=$2,updated_at=now() where id=$1`,[row.workflowRunId,decision==='reject'?'stopped':'running']);
+      await client.query('commit'); return { approvalId:id,decision,state:approvalState };
+    } catch(error) { await client.query('rollback'); throw error; } finally { client.release(); }
   }
   async workflow(id: string) {
     const result = await this.pool.query('select id,state,temporal_workflow_id as "temporalWorkflowId",created_at as "createdAt",updated_at as "updatedAt" from workflow_runs where id=$1', [id]);

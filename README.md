@@ -2,6 +2,10 @@
 
 A safety-first control plane for researching, deciding, building, operating, and learning from web ventures. This repository is deliberately not an SEO dashboard or a fake agent demo: every displayed action must be backed by persisted workflow state, events, evidence, or an explicit unavailable status.
 
+## Run locally
+
+From `D:\\codex\\seo`, run `pnpm dev`. This single command starts Docker Desktop when needed, starts PostgreSQL/Redis/Temporal, applies local migrations, generates an in-memory owner session token, and launches the API, worker, and Control Center. Open `http://localhost:3000`. Press `Ctrl+C` in that terminal to stop application processes. Run `pnpm dev:status` for a quick health check.
+
 ## Current status
 
 Phase 0 is in progress. The first vertical slice is a local, authenticated Control Center that creates a durable opportunity-research run, records public-source evidence, presents strategy scorecards, and requires approval before a Project is created. No paid provider, deployment, DNS, Figma, GitHub automation, analytics, or model provider is configured by default.
