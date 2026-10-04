@@ -8,7 +8,7 @@ From `D:\\codex\\seo`, run `pnpm dev`. This single command starts Docker Desktop
 
 ## Current status
 
-Phase 0's first vertical slice is largely complete. Phase 1.5 Market Evidence Expansion is active: the authenticated Control Center creates durable Market Studies, records official/public problem and topic-interest evidence, displays per-capability availability, compares candidates with an 11-dimension score and blocks project creation while Phase 2 evidence is incomplete. No paid provider, live SERP, Trends access, deployment, DNS, Figma, analytics, Search Console property, or model provider is configured by default. Phase 2 has not started.
+Phase 0's first vertical slice is largely complete. Phase 1.5 Market Evidence Expansion is active: the authenticated Control Center creates durable Market Studies, records official/public problem and topic-interest evidence plus Pakistan geographic context, distinguishes direct evidence from proxies, persists partial and failed provider attempts, displays freshness/confidence/limitations, compares candidates with an 11-dimension score and blocks project creation while Phase 2 evidence is incomplete. Provider-independent Brave Search and Google Ads adapters remain unavailable until credentials and policy/budget approval exist. No paid call, deployment, DNS change, Figma action, analytics connection, Search Console property, or model provider is configured by default. Phase 2 has not started.
 
 ## Stack
 

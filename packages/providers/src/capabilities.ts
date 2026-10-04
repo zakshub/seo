@@ -1,34 +1,14 @@
 import type { EvidenceProviderManifest } from '@venture/contracts';
 
+const common:{requiresCredentials:false;paid:false;supportedMarkets:string[];limitations:string[]}={requiresCredentials:false,paid:false,supportedMarkets:['global'],limitations:[]};
 export const evidenceProviderManifests: EvidenceProviderManifest[] = [
-  {
-    id:'stackexchange-public-api', name:'Stack Exchange Webmasters API', capability:'problem_signal', sourceClass:'public_api',
-    availability:'available', reason:'Official public API; supplies attributed Q&A engagement signals only.', requiresCredentials:false, paid:false,
-    supportedLanguages:['en'], supportedMarkets:['global'], documentationUrl:'https://api.stackexchange.com/docs/advanced-search'
-  },
-  {
-    id:'wikimedia-pageviews-api', name:'Wikimedia Pageviews API', capability:'topic_interest', sourceClass:'official',
-    availability:'available', reason:'Official open API; article pageviews are directional topic interest, not search volume.', requiresCredentials:false, paid:false,
-    supportedLanguages:['en','ur'], supportedMarkets:['global'], documentationUrl:'https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/reference/page-views.html'
-  },
-  {
-    id:'google-trends-api-alpha', name:'Google Trends API alpha', capability:'trend_interest', sourceClass:'official',
-    availability:'unavailable', reason:'Access is limited to approved alpha testers; no verified access is configured.', requiresCredentials:true, paid:false,
-    supportedLanguages:['multiple'], supportedMarkets:['multiple'], documentationUrl:'https://developers.google.com/search/apis/trends'
-  },
-  {
-    id:'live-serp-provider', name:'Live SERP evidence', capability:'serp_observation', sourceClass:'public_api',
-    availability:'unavailable', reason:'No approved, lawful, free live-SERP API is configured. Search-result scraping is not used as a fallback.', requiresCredentials:false, paid:false,
-    supportedLanguages:[], supportedMarkets:[], documentationUrl:'https://developers.google.com/custom-search/v1/overview'
-  },
-  {
-    id:'search-console-api', name:'Google Search Console API', capability:'first_party_search_performance', sourceClass:'first_party',
-    availability:'unavailable', reason:'Requires owner OAuth and a verified site property; no public web property is connected.', requiresCredentials:true, paid:false,
-    supportedLanguages:['property-dependent'], supportedMarkets:['property-dependent'], documentationUrl:'https://developers.google.com/webmaster-tools'
-  },
-  {
-    id:'keyword-discovery-provider', name:'Search keyword discovery', capability:'keyword_discovery', sourceClass:'public_api',
-    availability:'unavailable', reason:'No approved official keyword-demand API is configured. Public Q&A phrases remain problem-language observations only.', requiresCredentials:false, paid:false,
-    supportedLanguages:[], supportedMarkets:[], documentationUrl:'https://developers.google.com/search/apis/trends'
-  }
+  { ...common,id:'stackexchange-public-api',name:'Stack Exchange Webmasters API',capability:'problem_signal',sourceClass:'public_api',availability:'available',reason:'Official public API; supplies attributed Q&A engagement signals only.',supportedLanguages:['en'],documentationUrl:'https://api.stackexchange.com/docs/advanced-search',evidenceNature:'proxy',resolvesDimensions:['intent','solution_fit'],limitations:['Source-page engagement is not search demand or commercial intent.'] },
+  { ...common,id:'wikimedia-pageviews-api',name:'Wikimedia Pageviews API',capability:'topic_interest',sourceClass:'official',availability:'available',reason:'Official open API; article pageviews are directional topic interest, not search volume.',supportedLanguages:['en','ur'],documentationUrl:'https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/reference/page-views.html',evidenceNature:'proxy',resolvesDimensions:['topic_traffic_potential'],limitations:['Article pageviews do not reveal query demand or acquisition source.'] },
+  { ...common,id:'world-bank-indicators-api',name:'World Bank Indicators API',capability:'geographic_market_context',sourceClass:'official',availability:'available',reason:'Official keyless API; supplies Pakistan digital-access context only.',supportedLanguages:['en'],supportedMarkets:['Pakistan'],documentationUrl:'https://datahelpdesk.worldbank.org/knowledgebase/articles/889392',evidenceNature:'proxy',resolvesDimensions:['geographic_context'],limitations:['Internet adoption is not SEO demand, willingness to pay, or click potential.'] },
+  { id:'brave-search-api',name:'Brave Search API',capability:'serp_observation',sourceClass:'public_api',availability:'blocked',reason:'A lawful live-search adapter exists, but no approved paid subscription, budget, or credential is configured.',requiresCredentials:true,paid:true,supportedLanguages:['multiple'],supportedMarkets:['multiple'],documentationUrl:'https://api-dashboard.search.brave.com/api-reference/web/search/post',evidenceNature:'direct',resolvesDimensions:['serp_reality','competitor_quality','click_potential','commercial_intent'],limitations:['Observes Brave results, not Google rankings; page-depth and authority require separate bounded fetches.'] },
+  { id:'google-ads-keyword-planner',name:'Google Ads Keyword Planner API',capability:'search_demand',sourceClass:'official',availability:'unavailable',reason:'Adapter requires approved Google Ads developer token, OAuth, customer access and explicit authorization.',requiresCredentials:true,paid:false,supportedLanguages:['multiple'],supportedMarkets:['multiple'],documentationUrl:'https://developers.google.com/google-ads/api/docs/keyword-planning/generate-historical-metrics',evidenceNature:'direct',resolvesDimensions:['demand','commercial_intent','geographic_context'],limitations:['Advertising competition and bid ranges are commercial-intent evidence, not organic ranking difficulty.'] },
+  { id:'keyword-discovery-provider',name:'Keyword discovery',capability:'keyword_discovery',sourceClass:'official',availability:'unavailable',reason:'Google Ads keyword-idea access is not configured; question phrases remain problem-language proxies only.',requiresCredentials:true,paid:false,supportedLanguages:['multiple'],supportedMarkets:['multiple'],documentationUrl:'https://developers.google.com/google-ads/api/docs/keyword-planning/generate-keyword-ideas',evidenceNature:'direct',resolvesDimensions:['intent','demand'],limitations:['Discovered phrases require separate historical metrics; ideas alone do not prove demand.'] },
+  { ...common,id:'google-trends-api-alpha',name:'Google Trends API alpha',capability:'trend_interest',sourceClass:'official',availability:'unavailable',reason:'Access is limited to approved alpha testers; no verified access is configured.',requiresCredentials:true,supportedLanguages:['multiple'],supportedMarkets:['multiple'],documentationUrl:'https://developers.google.com/search/apis/trends',evidenceNature:'direct',resolvesDimensions:['demand_trend','geographic_context'],limitations:['Trends is normalized interest, not absolute search volume.'] },
+  { ...common,id:'search-console-api',name:'Google Search Console API',capability:'first_party_search_performance',sourceClass:'first_party',availability:'unavailable',reason:'Requires owner OAuth and a verified site property; no public web property is connected.',requiresCredentials:true,supportedLanguages:['property-dependent'],supportedMarkets:['property-dependent'],documentationUrl:'https://developers.google.com/webmaster-tools',evidenceNature:'direct',resolvesDimensions:['demand','click_potential'],limitations:['First-party performance exists only after a property receives impressions.'] },
+  { ...common,id:'authority-evidence-provider',name:'Authority and backlink evidence',capability:'authority_difficulty',sourceClass:'public_api',availability:'unavailable',reason:'No approved backlink index or evidence source is configured; no DR, DA, backlink count, or difficulty is inferred.',supportedLanguages:[],supportedMarkets:[],documentationUrl:'https://commoncrawl.org/get-started',evidenceNature:'proxy',resolvesDimensions:['authority_requirement'],limitations:['Common Crawl presence alone is not backlink quality or ranking authority.'] }
 ];

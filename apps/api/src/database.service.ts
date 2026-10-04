@@ -59,10 +59,11 @@ export class DatabaseService implements OnModuleDestroy {
       this.pool.query(`select id,market_study_id as "marketStudyId",opportunity_id as "opportunityId",dimension,classification,claim,evidence_ids as "evidenceIds",confidence
         from market_findings where market_study_id=any($1::uuid[]) order by created_at`,[ids]),
       this.pool.query(`select oe.opportunity_id as "opportunityId",e.id,e.source_url as "sourceUrl",e.captured_at as "capturedAt",e.reference,e.confidence,
-        e.provider_id as "providerId",e.capability,e.source_class as "sourceClass",e.subject,e.measurement,e.limitations
+        e.provider_id as "providerId",e.capability,e.source_class as "sourceClass",e.subject,e.measurement,e.limitations,e.evidence_nature as "evidenceNature",e.geography,e.observed_at as "observedAt",e.fresh_until as "freshUntil",
+        case when e.fresh_until is not null and e.fresh_until<now() then true else false end as stale
         from opportunity_evidence oe join evidence_items e on e.id=oe.evidence_id join opportunities o on o.id=oe.opportunity_id
         where o.market_study_id=any($1::uuid[])`,[ids]),
-      this.pool.query(`select market_study_id as "marketStudyId",provider_id as "providerId",capability,availability,reason,request_count as "requestCount",paid_cost_cents as "paidCostCents"
+      this.pool.query(`select market_study_id as "marketStudyId",provider_id as "providerId",capability,availability,reason,request_count as "requestCount",paid_cost_cents as "paidCostCents",evidence_nature as "evidenceNature",geography,resolves_dimensions as "resolvesDimensions",documentation_url as "documentationUrl",limitations
         from market_study_provider_runs where market_study_id=any($1::uuid[]) order by provider_id`,[ids])
     ]);
     return studies.rows.map((study:{id:string})=>({
@@ -76,7 +77,7 @@ export class DatabaseService implements OnModuleDestroy {
     }));
   }
   async evidenceCapabilities() {
-    const result=await this.pool.query(`select provider_id as "providerId",capability,availability,reason,request_count as "requestCount",paid_cost_cents as "paidCostCents",created_at as "createdAt" from market_study_provider_runs order by created_at desc`);
+    const result=await this.pool.query(`select provider_id as "providerId",capability,availability,reason,request_count as "requestCount",paid_cost_cents as "paidCostCents",evidence_nature as "evidenceNature",geography,resolves_dimensions as "resolvesDimensions",documentation_url as "documentationUrl",limitations,created_at as "createdAt" from market_study_provider_runs order by created_at desc`);
     return result.rows;
   }
   async openSourceTools() {
@@ -128,11 +129,11 @@ export class DatabaseService implements OnModuleDestroy {
       if (existing.rows[0]) { await client.query('commit'); return { ...existing.rows[0], idempotent: true }; }
       const runId = randomUUID(); const studyId=randomUUID(); const eventId = randomUUID(); const now = new Date().toISOString();
       await client.query(`insert into market_studies(id,workspace_id,brief,language,market,status,source_policy,paid_budget_cents,request_limit,time_limit_seconds)
-        values($1,$2,$3,'en','global','created','free_public_web',0,4,90)`,[studyId,WORKSPACE_ID,brief]);
+        values($1,$2,$3,'en','global','created','free_public_web',0,5,90)`,[studyId,WORKSPACE_ID,brief]);
       await client.query(`insert into workflow_runs(id,workspace_id,market_study_id,idempotency_key,state) values($1,$2,$3,$4,'created')`, [runId,WORKSPACE_ID,studyId,idempotencyKey]);
       await client.query(`insert into outbox_events(id,aggregate_type,aggregate_id,event_type,event_version,payload,occurred_at) values
         ($1,'market_study',$2,'market_study.created',1,$3::jsonb,$4),($5,'workflow',$6,'workflow.created',1,$7::jsonb,$4)`,
-        [randomUUID(),studyId,JSON.stringify({brief,language:'en',market:'global',sourcePolicy:'free_public_web',paidBudgetCents:0,requestLimit:4,timeLimitSeconds:90}),now,eventId,runId,JSON.stringify({marketStudyId:studyId,language:'en',market:'global',paidBudgetCents:0})]);
+        [randomUUID(),studyId,JSON.stringify({brief,language:'en',market:'global',sourcePolicy:'free_public_web',paidBudgetCents:0,requestLimit:5,timeLimitSeconds:90}),now,eventId,runId,JSON.stringify({marketStudyId:studyId,language:'en',market:'global',paidBudgetCents:0})]);
       await client.query('commit'); return { id: runId, marketStudyId:studyId, state: 'created', idempotent: false };
     } catch (error) { await client.query('rollback'); throw error; } finally { client.release(); }
   }

@@ -7,3 +7,6 @@ export const unavailableResearch: PublicResearchSource = { name: 'unconfigured',
 export { StackExchangeResearchSource } from './stack-exchange.js';
 export { WikimediaPageviewsSource, type WikimediaTopic } from './wikimedia.js';
 export { evidenceProviderManifests } from './capabilities.js';
+export { WorldBankMarketContextSource } from './world-bank.js';
+export { BraveSearchSource, type SerpObservation } from './brave-search.js';
+export { GoogleAdsDemandSource, type SearchDemandObservation } from './google-ads.js';

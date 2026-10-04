@@ -7,11 +7,20 @@ Last verified: 2026-10-04. Git references are added after the implementation com
 | Product phase | Status | Verified evidence | Next dependency |
 |---|---|---|---|
 | 0 — Foundation and first vertical slice | Largely complete | PostgreSQL, Redis, Temporal, authenticated API, worker, real public evidence, owner decision controls, responsive Control Center, one-command startup | SSE and pause/resume/stop remain engineering gaps |
-| 1 — Market validation and opportunity discovery | In progress | Phase 1.5 capability model; Stack Exchange problem evidence; Wikimedia topic-interest evidence; 11-dimension scoring; Phase 2 readiness gate; provider-status and open-source review UI | Authorized search demand, live SERP, competitor, click-potential, Urdu/local-market and authority evidence |
+| 1 — Market validation and opportunity discovery | In progress | Phase 1.5 capability model; Stack Exchange problem evidence; Wikimedia topic-interest evidence; official Pakistan context; direct/proxy, confidence, freshness and conflict rules; persisted provider attempts; 11-dimension scoring; Phase 2 readiness gate | Credentials/approval for direct search demand and lawful live SERP evidence; bounded competitor, click-potential, commercial-intent and authority evidence; stronger Urdu evidence |
 | 2 — Minimum Marketable Public Website | Not started | Entry criteria documented in `25_PHASE_2_ENTRY_CRITERIA.md` | Evidence gates plus explicit owner approval |
 | 3–15 | Not started | — | Earlier product phases |
 
 ## Latest verification
+
+- Continuation start point: local and `origin/main` at `c1196aa`; unrelated untracked lecture file preserved.
+- Migration `0005_evidence_quality_and_provider_attempts.sql` applied cleanly. It adds direct/proxy nature, observation and freshness times, geography, idempotent provider-run attempts, and bounded competitor-observation storage.
+- Real study: `2e116374-5e20-4767-8785-1ce9aa641613`; workflow `8153ad20-3626-4c24-99f7-b611a591bf70`; `awaiting_review` / `awaiting_approval`; zero paid cost; three `RESEARCH_MORE` candidates scoring 27, 23 and 23.
+- Provider outcomes were persisted, including `available` Stack Exchange, `partial` Wikimedia (Urdu article HTTP 404), `available` World Bank Pakistan context, and explicit `unavailable` outcomes for Brave Search, Google Ads Keyword Planner, Google Trends alpha, Search Console, keyword discovery and authority evidence.
+- The official World Bank indicator recorded 57.253% of Pakistan's population using the internet for 2024 at 0.80 confidence. This is stored and displayed as a geographic-context proxy, never as search demand or willingness to pay.
+- Every candidate remains blocked by UNKNOWN demand, SERP reality, competitor quality and click potential. A live approval attempt returned HTTP 409; project count remained zero.
+- Final automated verification: 38 tests passed across contracts, providers, API, database and worker; the full workspace typecheck and production build passed.
+- Runtime health reports UI, API, PostgreSQL and Temporal available. Server-rendered Control Center HTML contains the Build lock, candidate blockers, evidence nature, provider availability/limitations and provider documentation links.
 
 - Phase 1.5 start point: local and `origin/main` at `aa0c512`; implementation commit `7874d69`; unrelated untracked lecture file preserved.
 - Baseline and final automated verification: 30 tests passed, workspace typecheck passed, and production build passed.
@@ -30,4 +39,4 @@ Last verified: 2026-10-04. Git references are added after the implementation com
 
 ## Current limitations
 
-The official Stack Exchange and Wikimedia observations supply public problem engagement and directional topic interest only. They do not validate Google search volume, keyword difficulty, SERP weakness/composition, competitor traffic/quality, backlink counts, click potential, geography, commercial intent, authority requirements, defensibility, or product-market fit. All new candidates correctly recommend `RESEARCH_MORE`. No opportunity has been selected and Phase 2 has not started. Figma, LLM, analytics, Search Console, deployment, paid providers, revenue, and production infrastructure remain unconfigured.
+The official Stack Exchange and Wikimedia observations supply public problem engagement and directional topic interest only. The World Bank observation supplies Pakistan digital-access context only. None validates Google search volume, keyword difficulty, SERP weakness/composition, competitor traffic/quality, backlink counts, click potential, commercial intent, authority requirements, defensibility, or product-market fit. The provider-independent Brave Search and Google Ads adapters are implemented, but are honestly unavailable without credentials and policy/budget approval; no call or metric substitution occurs. All candidates correctly recommend `RESEARCH_MORE`. No opportunity has been selected and Phase 2 has not started. Figma, LLM, analytics, Search Console, deployment, paid providers, revenue, and production infrastructure remain unconfigured.

@@ -5,3 +5,5 @@ Event names are past-tense facts: `opportunity.discovered`, `opportunity.researc
 Also emit workflow lifecycle, agent status, approval, policy, provider availability, cost, and audit events. The envelope is versioned and sanitized; consumers must accept unknown fields and reject unsupported major versions.
 
 Phase 1.5 emits `provider.unavailable` separately for each missing capability, while `market_study.completed` and `opportunity.scored` include `phase2Ready: false` or the complete readiness result. An unavailable source is an event and provider-run record, not a successful observation.
+
+Provider attempt persistence distinguishes `available`, `partial`, `unavailable`, `blocked`, and `failed`. Duplicate Temporal activity delivery reuses the same provider-attempt idempotency key. Evidence conflicts and staleness are included in the scorecard result rather than overwritten or averaged away.

@@ -34,7 +34,7 @@ export class WikimediaPageviewsSource {
         const total = items.reduce((sum,item)=>sum+(item.views ?? 0),0);
         observations.push({
           providerId:this.name, capability:'topic_interest', sourceClass:'official', sourceUrl:`https://${project}/wiki/${encodeURIComponent(topic.article)}`,
-          subject:topic.label, capturedAt:this.now().toISOString(), language:topic.language, market:'global',
+          subject:topic.label, capturedAt:this.now().toISOString(), observedAt:end.toISOString(), freshUntil:new Date(end.getTime()+7*86400000).toISOString(), language:topic.language, market:'global',evidenceNature:'proxy',
           measurement:{kind:'wikipedia_article_pageviews_30d',value:total,unit:'pageviews',definition:`Sum of ${items.length} daily Wikimedia user pageview observations.`,absoluteSearchDemand:false},
           confidence:0.7, limitations:LIMITS, reference:JSON.stringify({provider:this.name,api:BASE,project,article:topic.article,start:ymd(start),end:ymd(end),days:items.length,failures})
         });

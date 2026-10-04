@@ -1,12 +1,15 @@
 import { createHash } from 'node:crypto';
 import { Pool, type PoolClient } from 'pg';
 import { scoreOpportunity, scoreModernOpportunity, type DimensionAssessment, type ModernDimensionAssessment, type ModernOpportunityScore, type MarketEvidenceObservation } from '@venture/contracts';
-import { StackExchangeResearchSource, WikimediaPageviewsSource, evidenceProviderManifests, type ResearchEvidence } from '@venture/providers';
+import { StackExchangeResearchSource, WikimediaPageviewsSource, WorldBankMarketContextSource, BraveSearchSource, GoogleAdsDemandSource, evidenceProviderManifests, type ResearchEvidence } from '@venture/providers';
 import type { ResearchWorkflowInput } from './research-workflow.js';
 
 const WORKSPACE_ID = '00000000-0000-4000-8000-000000000002';
 const source = new StackExchangeResearchSource();
 const topicSource = new WikimediaPageviewsSource();
+const geographySource = new WorldBankMarketContextSource();
+const serpSource = new BraveSearchSource(process.env.BRAVE_SEARCH_API_KEY);
+const demandSource = new GoogleAdsDemandSource({developerToken:process.env.GOOGLE_ADS_DEVELOPER_TOKEN,accessToken:process.env.GOOGLE_ADS_ACCESS_TOKEN,customerId:process.env.GOOGLE_ADS_CUSTOMER_ID,loginCustomerId:process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID});
 
 export type Candidate = {
   title: string;
@@ -124,13 +127,16 @@ async function persistFindings(client: PoolClient, input: ResearchWorkflowInput,
 }
 
 export async function performResearch(input: ResearchWorkflowInput) {
-  const [result, topicResult] = await Promise.all([
+  const [result, topicResult, geographyResult, serpResult, demandResult] = await Promise.all([
     source.research({ language:input.language, market:input.market, seed:input.brief }),
     topicSource.research([
       {article:'Search_engine_optimization',language:'en',label:'Search engine optimization'},
       {article:'Google_Search_Console',language:'en',label:'Google Search Console'},
       {article:'تلاش_انجن',language:'ur',label:'Search engines'}
-    ])
+    ]),
+    geographySource.research('PAK'),
+    serpSource.search({query:'SEO audit tools and troubleshooting',country:'PK',language:'en',count:10,approvedBudgetCents:0}),
+    demandSource.historicalMetrics({keywords:['seo audit','seo checker','technical seo'],languageResource:process.env.GOOGLE_ADS_LANGUAGE_RESOURCE??'',geoTargetResources:(process.env.GOOGLE_ADS_GEO_TARGET_RESOURCES??'').split(',').filter(Boolean)})
   ]);
   const pool = new Pool({ connectionString:process.env.DATABASE_URL ?? 'postgresql://venture:venture@127.0.0.1:5432/venture_os' });
   const client = await pool.connect();
@@ -138,11 +144,17 @@ export async function performResearch(input: ResearchWorkflowInput) {
     await client.query('begin');
     await client.query(`update market_studies set status='researching',updated_at=now() where id=$1`,[input.marketStudyId]);
     for (const manifest of evidenceProviderManifests) {
-      const actual = manifest.id===source.name ? result : manifest.id===topicSource.name ? topicResult : undefined;
-      await client.query(`insert into market_study_provider_runs(id,market_study_id,provider_id,capability,availability,reason,request_count)
-        values($1,$2,$3,$4,$5,$6,$7) on conflict(market_study_id,provider_id) do update set availability=excluded.availability,reason=excluded.reason,request_count=excluded.request_count`,[
+      const actual = manifest.id===source.name ? result : manifest.id===topicSource.name ? topicResult : manifest.id===geographySource.name ? geographyResult : manifest.id===serpSource.name ? serpResult : manifest.id===demandSource.name ? demandResult : undefined;
+      const requestCount=manifest.id===source.name?1:manifest.id===topicSource.name?3:manifest.id===geographySource.name?1:0;
+      const resultStatus=actual?.availability==='available'&&actual.reason?.startsWith('Partial result:')?'partial':actual?.availability??manifest.availability;
+      await client.query(`insert into market_study_provider_runs(id,market_study_id,provider_id,capability,availability,reason,request_count,evidence_nature,geography,resolves_dimensions,documentation_url,limitations,observed_at,fresh_until)
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12::jsonb,now(),null) on conflict(market_study_id,provider_id) do update set availability=excluded.availability,reason=excluded.reason,request_count=excluded.request_count,evidence_nature=excluded.evidence_nature,geography=excluded.geography,resolves_dimensions=excluded.resolves_dimensions,documentation_url=excluded.documentation_url,limitations=excluded.limitations,observed_at=excluded.observed_at`,[
         stableUuid(`${input.runId}:provider:${manifest.id}`),input.marketStudyId,manifest.id,manifest.capability,actual?.availability??manifest.availability,
-        actual?.reason??manifest.reason,manifest.id===source.name?1:manifest.id===topicSource.name?3:0
+        actual?.reason??manifest.reason,requestCount,manifest.evidenceNature,manifest.supportedMarkets.join(', '),JSON.stringify(manifest.resolvesDimensions),manifest.documentationUrl,JSON.stringify(manifest.limitations)
+      ]);
+      await client.query(`insert into provider_run_attempts(id,market_study_id,provider_id,capability,idempotency_key,result_status,reason,geography,evidence_nature,request_count,paid_cost_cents,started_at,completed_at,limitations)
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,0,now(),now(),$11::jsonb) on conflict(market_study_id,provider_id,idempotency_key) do nothing`,[
+        stableUuid(`${input.runId}:provider-attempt:${manifest.id}:v1`),input.marketStudyId,manifest.id,manifest.capability,`${input.runId}:${manifest.id}:v1`,resultStatus,actual?.reason??manifest.reason,manifest.supportedMarkets.join(', '),manifest.evidenceNature,requestCount,JSON.stringify(manifest.limitations)
       ]);
       if ((actual?.availability??manifest.availability)!=='available') await insertEvent(client,input.runId,'provider.unavailable',{provider:manifest.id,capability:manifest.capability,reason:actual?.reason??manifest.reason},`provider:${manifest.id}`);
     }
@@ -154,16 +166,18 @@ export async function performResearch(input: ResearchWorkflowInput) {
       return { state:'waiting',providerAvailability:result.availability,opportunities:0 };
     }
     const topicObservations = topicResult.availability==='available' ? topicResult.value ?? [] : [];
-    const topicEvidenceIds:string[]=[];
-    for (const observation of topicObservations) {
+    const geographyObservations=geographyResult.availability==='available'?geographyResult.value??[]:[];
+    const topicEvidenceIds:string[]=[]; const geographyEvidenceIds:string[]=[];
+    for (const observation of [...topicObservations,...geographyObservations]) {
       const evidenceId=stableUuid(`${input.runId}:evidence:${observation.providerId}:${observation.language}:${observation.subject}`);
-      topicEvidenceIds.push(evidenceId);
+      if(observation.capability==='topic_interest')topicEvidenceIds.push(evidenceId);else geographyEvidenceIds.push(evidenceId);
       const integrityHash=createHash('sha256').update(observation.reference).digest('hex');
-      await client.query(`insert into evidence_items(id,workspace_id,source_url,captured_at,reference,language,market,confidence,retention,integrity_hash,provider_id,capability,source_class,subject,measurement,limitations)
-        values($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$10,$11,$12,$13,$14::jsonb,$15::jsonb) on conflict(id) do nothing`,[
+      await client.query(`insert into evidence_items(id,workspace_id,source_url,captured_at,reference,language,market,confidence,retention,integrity_hash,provider_id,capability,source_class,subject,measurement,limitations,evidence_nature,geography,observed_at,fresh_until)
+        values($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$10,$11,$12,$13,$14::jsonb,$15::jsonb,$16,$17,$18,$19) on conflict(id) do nothing`,[
         evidenceId,WORKSPACE_ID,observation.sourceUrl,observation.capturedAt,observation.reference,observation.language,observation.market,observation.confidence,integrityHash,
-        observation.providerId,observation.capability,observation.sourceClass,observation.subject,JSON.stringify(observation.measurement),JSON.stringify(observation.limitations)
+        observation.providerId,observation.capability,observation.sourceClass,observation.subject,JSON.stringify(observation.measurement),JSON.stringify(observation.limitations),observation.evidenceNature,observation.geography??observation.market,observation.observedAt,observation.freshUntil??null
       ]);
+      await client.query(`update provider_run_attempts set evidence_ids=array_append(evidence_ids,$2::uuid) where market_study_id=$1 and provider_id=$3 and not ($2::uuid=any(evidence_ids))`,[input.marketStudyId,evidenceId,observation.providerId]);
     }
     const candidates = buildCandidates(result.value,topicObservations);
     for (const [index,candidate] of candidates.entries()) {
@@ -173,18 +187,19 @@ export async function performResearch(input: ResearchWorkflowInput) {
       const modernAssessments = candidate.modernAssessments.map((item) => ({ ...item, evidenceIds:item.strength === null ? [] : item.dimension==='topic_traffic_potential' ? topicEvidenceIds : [evidenceId] }));
       const modernScore = scoreModernOpportunity(modernAssessments);
       const legacyScore = scoreOpportunity(candidate.assessments.map((item)=>({...item,evidenceIds:item.strength===null?[]:[evidenceId]})));
-      await client.query(`insert into evidence_items(id,workspace_id,source_url,captured_at,reference,language,market,confidence,retention,integrity_hash,provider_id,capability,source_class,subject,measurement,limitations)
-        values($1,$2,$3,$4,$5,'en','global',$6,'active',$7,$8,'problem_signal','public_api',$9,$10::jsonb,$11::jsonb) on conflict(id) do nothing`,[
+      await client.query(`insert into evidence_items(id,workspace_id,source_url,captured_at,reference,language,market,confidence,retention,integrity_hash,provider_id,capability,source_class,subject,measurement,limitations,evidence_nature,geography,observed_at,fresh_until)
+        values($1,$2,$3,$4,$5,'en','global',$6,'active',$7,$8,'problem_signal','public_api',$9,$10::jsonb,$11::jsonb,'proxy','global',$4,$12) on conflict(id) do nothing`,[
         evidenceId,WORKSPACE_ID,candidate.evidence.url,candidate.evidence.capturedAt,candidate.evidence.reference,candidate.evidence.confidence,integrityHash,source.name,candidate.evidence.title,
-        JSON.stringify({kind:'public_question_engagement',value:candidate.evidence.metrics.views??null,unit:'source_page_views',definition:'Views reported by the source Q&A API.',absoluteSearchDemand:false}),JSON.stringify(candidate.evidence.limitations)
+        JSON.stringify({kind:'public_question_engagement',value:candidate.evidence.metrics.views??null,unit:'source_page_views',definition:'Views reported by the source Q&A API.',absoluteSearchDemand:false}),JSON.stringify(candidate.evidence.limitations),new Date(new Date(candidate.evidence.capturedAt).getTime()+7*86400000).toISOString()
       ]);
+      await client.query(`update provider_run_attempts set evidence_ids=array_append(evidence_ids,$2::uuid) where market_study_id=$1 and provider_id=$3 and not ($2::uuid=any(evidence_ids))`,[input.marketStudyId,evidenceId,source.name]);
       await client.query(`insert into opportunities(id,workspace_id,workflow_run_id,market_study_id,title,lifecycle,limitations,rationale,scorecard,modern_scorecard,problem,audience,search_demand_hypothesis,search_intent,search_surfaces,geography_language,product_type_hypothesis,monetization_hypothesis,traffic_potential,build_complexity,defensibility,risks,unknowns,confidence,recommendation,topic_clusters,query_examples,competitor_observations,content_gaps,tool_gaps,product_formats,initial_information_architecture,phase2_readiness)
         values($1,$2,$3,$4,$5,'scored',$6::jsonb,$7,$8::jsonb,$9::jsonb,$10,$11,$12,$13,$14::jsonb,$15,$16,$17,$18,$19,$20,$21::jsonb,$22::jsonb,$23,$24,$25::jsonb,$26::jsonb,$27::jsonb,$28::jsonb,$29::jsonb,$30::jsonb,$31::jsonb,$32::jsonb) on conflict(id) do nothing`,[
         opportunityId,WORKSPACE_ID,input.runId,input.marketStudyId,candidate.title,JSON.stringify(candidate.evidence.limitations),candidate.rationale,JSON.stringify(modernScore),JSON.stringify({legacy:legacyScore,modern:modernScore}),
         candidate.profile.problem,candidate.profile.audience,candidate.profile.searchDemandHypothesis,candidate.profile.searchIntent,JSON.stringify(candidate.profile.searchSurfaces),candidate.profile.geographyLanguage,candidate.profile.productTypeHypothesis,candidate.profile.monetizationHypothesis,candidate.profile.trafficPotential,candidate.profile.buildComplexity,candidate.profile.defensibility,JSON.stringify(candidate.profile.risks),JSON.stringify(modernScore.unknownDimensions),modernScore.evidenceCoverage,modernScore.recommendation,
         JSON.stringify(candidate.discovery.topicClusters),JSON.stringify(candidate.discovery.queryExamples),JSON.stringify(candidate.discovery.competitorObservations),JSON.stringify(candidate.discovery.contentGaps),JSON.stringify(candidate.discovery.toolGaps),JSON.stringify(candidate.discovery.productFormats),JSON.stringify(candidate.discovery.informationArchitecture),JSON.stringify({ready:modernScore.phase2Ready,blockers:modernScore.phase2Blockers})
       ]);
-      for(const linkedEvidenceId of [evidenceId,...topicEvidenceIds]) await client.query(`insert into opportunity_evidence(opportunity_id,evidence_id) values($1,$2) on conflict do nothing`,[opportunityId,linkedEvidenceId]);
+      for(const linkedEvidenceId of [evidenceId,...topicEvidenceIds,...geographyEvidenceIds]) await client.query(`insert into opportunity_evidence(opportunity_id,evidence_id) values($1,$2) on conflict do nothing`,[opportunityId,linkedEvidenceId]);
       await client.query(`insert into opportunity_evaluations(id,opportunity_id,workflow_run_id,scorecard,recommendation) values($1,$2,$3,$4::jsonb,$5) on conflict(opportunity_id,workflow_run_id) do nothing`,[stableUuid(`${input.runId}:evaluation:${opportunityId}`),opportunityId,input.runId,JSON.stringify(modernScore),modernScore.recommendation]);
       await persistFindings(client,input,opportunityId,modernScore);
       await insertEvent(client,input.runId,'opportunity.discovered',{ marketStudyId:input.marketStudyId,opportunityId,title:candidate.title,provider:source.name,evidenceIds:[evidenceId,...topicEvidenceIds] },`discovered:${index}`);
