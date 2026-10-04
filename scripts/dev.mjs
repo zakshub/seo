@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 
 const root=new URL('../',import.meta.url); const compose=['compose','-f','infrastructure/docker-compose.yml'];
@@ -15,9 +15,13 @@ if(runSync(docker,['info']).status!==0&&process.platform==='win32') { spawn('C:\
 if(runSync(docker,['info']).status!==0)throw new Error('Docker is unavailable. Start Docker Desktop and run pnpm dev again.');
 const infrastructure=runSync(docker,[...compose,'up','-d'],{stdio:'inherit'}); if(infrastructure.status!==0)process.exit(infrastructure.status??1);
 for(let i=0;i<45&&!(await port('127.0.0.1',5432));i++)await sleep(1000);
+for(let i=0;i<45&&runSync(docker,[...compose,'exec','-T','postgres','pg_isready','-U','venture','-d','venture_os']).status!==0;i++)await sleep(1000);
+if(runSync(docker,[...compose,'exec','-T','postgres','pg_isready','-U','venture','-d','venture_os']).status!==0)throw new Error('PostgreSQL did not become ready for migrations.');
 if(!(await port('127.0.0.1',7233))) { runSync(docker,[...compose,'up','-d','temporal'],{stdio:'inherit'}); for(let i=0;i<45&&!(await port('127.0.0.1',7233));i++)await sleep(1000); }
 const exists=runSync(docker,[...compose,'exec','-T','postgres','psql','-U','venture','-d','venture_os','-tAc',"select to_regclass('public.workspaces') is not null"]);
-const migrations=exists.stdout.trim()==='t'?['packages/db/migrations/0002_research_candidates.sql']:['packages/db/migrations/0001_foundation.sql','packages/db/migrations/0002_research_candidates.sql'];
+if(exists.status!==0)throw new Error('Could not inspect the PostgreSQL schema before migrations.');
+const allMigrations=readdirSync(new URL('../packages/db/migrations/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort().map(name=>`packages/db/migrations/${name}`);
+const migrations=exists.stdout.trim()==='t'?allMigrations.filter(path=>!path.endsWith('0001_foundation.sql')):allMigrations;
 for(const path of migrations)await new Promise((resolve,reject)=>{const child=spawn(docker,[...compose,'exec','-T','postgres','psql','-v','ON_ERROR_STOP=1','-U','venture','-d','venture_os'],{cwd:root,stdio:['pipe','inherit','inherit']});child.stdin.end(readFileSync(new URL(path,root)));child.once('exit',code=>code===0?resolve():reject(new Error(`Migration failed: ${path}`)));});
 const env={...process.env,LOCAL_OWNER_TOKEN:randomBytes(32).toString('hex')};
 const services=[['API',['--filter','@venture/api','dev']],['Worker',['--filter','@venture/worker','dev']],['Control Center',['--filter','@venture/control-center','dev']]];

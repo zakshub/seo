@@ -1,6 +1,6 @@
 {
   "name": "@venture/worker", "version": "0.1.0", "private": true, "type": "module",
-  "scripts": { "dev": "pnpm build && node dist/worker.js", "build": "esbuild src/worker.ts --bundle --platform=node --format=esm --packages=external --alias:@venture/providers=../../packages/providers/src/index.ts --outfile=dist/worker.js", "start": "node dist/worker.js", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "vitest run --passWithNoTests" },
+  "scripts": { "dev": "pnpm build && node dist/worker.js", "build": "esbuild src/worker.ts --bundle --platform=node --format=esm --packages=external --alias:@venture/providers=../../packages/providers/src/index.ts --alias:@venture/contracts=../../packages/contracts/src/index.ts --outfile=dist/worker.js", "start": "node dist/worker.js", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "vitest run" },
   "dependencies": { "@temporalio/activity": "^1.13.2", "@temporalio/worker": "^1.13.2", "@temporalio/workflow": "^1.13.2", "@venture/contracts": "workspace:*", "@venture/providers": "workspace:*", "pg": "^8.16.3" },
   "devDependencies": { "@types/node": "^24.10.1", "@types/pg": "^8.15.6", "esbuild": "^0.28.2" }
 }
