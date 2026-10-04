@@ -13,7 +13,7 @@ Last verified: 2026-10-04. Git references are added after the implementation com
 
 ## Latest verification
 
-- Phase 1.5 start point: local and `origin/main` at `aa0c512`; unrelated untracked lecture file preserved.
+- Phase 1.5 start point: local and `origin/main` at `aa0c512`; implementation commit `7874d69`; unrelated untracked lecture file preserved.
 - Baseline and final automated verification: 30 tests passed, workspace typecheck passed, and production build passed.
 - Migration `0004_market_evidence_expansion.sql` applied cleanly. It records normalized evidence measurements, per-study provider availability, modern score/readiness, 12 open-source reviews, and seven explicitly non-binding historical heuristics.
 - Real study: `60621e55-52d0-403e-8de1-ea12bba84dba`; workflow `6e21b667-3b25-4580-a721-cebd1dbe4a21`; `awaiting_review` / `awaiting_approval`; zero paid cost; three `RESEARCH_MORE` candidates.
