@@ -8,7 +8,7 @@ From `D:\\codex\\seo`, run `pnpm dev`. This single command starts Docker Desktop
 
 ## Current status
 
-Phase 0 is in progress. The first vertical slice is a local, authenticated Control Center that creates a durable opportunity-research run, records public-source evidence, presents strategy scorecards, and requires approval before a Project is created. No paid provider, deployment, DNS, Figma, GitHub automation, analytics, or model provider is configured by default.
+Phase 0's first vertical slice is largely complete. Phase 1 Market Validation is active: the authenticated Control Center creates durable Market Studies, records public-source evidence, compares candidates with explainable scores and explicit UNKNOWN dimensions, and requires owner approval before a Project is created. No paid provider, deployment, DNS, Figma, GitHub automation, analytics, or model provider is configured by default. Phase 2 has not started.
 
 ## Stack
 

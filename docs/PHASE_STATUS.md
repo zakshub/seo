@@ -1,12 +1,25 @@
 # Phase Status
 
-| Phase | Status | Evidence | Next dependency |
-|---|---|---|---|
-| 0 — Foundation | In progress | Documentation constitution; typed contracts; policy engine; PostgreSQL migrations/outbox boundary; provider adapters; responsive Next.js Control Center; Docker/WSL; PostgreSQL, Redis and Temporal; authenticated idempotent run creation; Temporal worker; API-backed projections; production build; one-command `pnpm dev` startup and health check | SSE and remaining lifecycle commands |
-| 1 — Control Center/workflows | In progress | Real overview, runtime health, workflow state, candidates and immutable events render from the API; browser Start control verified end-to-end; Approve/Reject/Request Changes routes and scoped pending-approval enforcement implemented | Owner must select a candidate to verify approval-to-project transition; then add pause/resume/stop and SSE |
-| 2 — Opportunity research | In progress | Official Stack Exchange API adapter; source policy/backoff handling; provenance and integrity hashes; three real candidates and evidence URLs persisted; transparent scorecards; one pending approval; 8 policy/provider tests passing | Add broader SEO/SERP evidence before treating any candidate as build-worthy |
-| 3 — Product strategy | Not started | — | Phase 2 evidence |
-| 4 — Figma/design review | Not started | — | Verified Figma/designer access and license review |
-| 5–12 | Not started | — | Earlier phase acceptance |
+Last verified: 2026-10-04. Git references are added after the implementation commits are created; planned work is not counted as complete.
 
-Known constraints: Stack Exchange evidence covers developer problem engagement only; it does not establish Google search demand, SERP weakness, or commercial viability. No LLM, keyword-volume, SERP, analytics, Figma, deployment, or paid provider is configured. The Control Center uses request-time projections; SSE and pause/resume/stop are not implemented. Approval-to-project code is implemented but intentionally not marked verified until the owner chooses a real candidate. Current candidates are backed by live captured evidence, not approved projects. GitHub is canonical.
+## Product roadmap
+
+| Product phase | Status | Verified evidence | Next dependency |
+|---|---|---|---|
+| 0 — Foundation and first vertical slice | Largely complete | PostgreSQL, Redis, Temporal, authenticated API, worker, real public evidence, owner decision controls, responsive Control Center, one-command startup | SSE and pause/resume/stop remain engineering gaps |
+| 1 — Market validation and opportunity discovery | In progress | First-class MarketStudy schema/API/workflow/UI; explainable scoring; fact/observation/inference/unknown claims; 3 real Webmasters candidates persisted; comparison screen visually verified | Broader authorized demand, live SERP, competitor, geography, defensibility and maintenance-cost evidence |
+| 2 — Minimum Marketable Public Website | Not started | Entry criteria documented in `25_PHASE_2_ENTRY_CRITERIA.md` | Evidence gates plus explicit owner approval |
+| 3–15 | Not started | — | Earlier product phases |
+
+## Latest verification
+
+- Start point: local `main` and `origin/main` both at `90ddf54`; unrelated untracked lecture file preserved.
+- Baseline: typecheck, 8 tests, and production build passed before changes.
+- Current automated suite: 23 tests passed across contracts, provider, API authorization, database migration contract, and worker candidate/idempotency behavior; full typecheck and production build passed.
+- Cold start: first attempt exposed a PostgreSQL-ready race; no data loss occurred. `pg_isready` gating fixed it. Second `pnpm dev` run applied `0003_market_studies.sql` and reported UI/API/PostgreSQL/Temporal healthy.
+- Real study: `fe8ada8f-8ebb-4c71-ac36-81f056c57321`; workflow `15712745-6d48-48d0-8b02-4ea595b59aa4`; state `awaiting_review` / `awaiting_approval`; 3 opportunities, 24 dimension findings, 3 attributed evidence records, zero paid budget.
+- Browser: Market Validation brief, genuine workflow state, comparison table, evidence coverage, classifications, risks/unknowns and runtime health rendered at `http://localhost:3000/`.
+
+## Current limitations
+
+The one official Stack Exchange Webmasters request supplies public Q&A problem-engagement evidence only. It does not validate Google search volume, ranking difficulty, SERP weakness, competitor traffic, backlink counts, geography, commercial intent, defensibility, or product-market fit. All candidates correctly recommend `RESEARCH_MORE`. No opportunity has been selected and Phase 2 has not started. Figma, LLM, analytics, Search Console, deployment, paid providers, revenue, and production infrastructure remain unconfigured.
