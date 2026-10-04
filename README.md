@@ -8,7 +8,7 @@ From `D:\\codex\\seo`, run `pnpm dev`. This single command starts Docker Desktop
 
 ## Current status
 
-Phase 0's first vertical slice is largely complete. Phase 1 Market Validation is active: the authenticated Control Center creates durable Market Studies, records public-source evidence, compares candidates with explainable scores and explicit UNKNOWN dimensions, and requires owner approval before a Project is created. No paid provider, deployment, DNS, Figma, GitHub automation, analytics, or model provider is configured by default. Phase 2 has not started.
+Phase 0's first vertical slice is largely complete. Phase 1.5 Market Evidence Expansion is active: the authenticated Control Center creates durable Market Studies, records official/public problem and topic-interest evidence, displays per-capability availability, compares candidates with an 11-dimension score and blocks project creation while Phase 2 evidence is incomplete. No paid provider, live SERP, Trends access, deployment, DNS, Figma, analytics, Search Console property, or model provider is configured by default. Phase 2 has not started.
 
 ## Stack
 

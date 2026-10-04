@@ -19,6 +19,8 @@ describe('market-study candidate construction', () => {
     expect(candidates).toHaveLength(3);
     expect(candidates[0]?.evidence.url).toContain('stackexchange.com');
     expect(candidates[0]?.assessments.find(value=>value.dimension==='serp_weakness')).toMatchObject({classification:'unknown',strength:null});
+    expect(candidates[0]?.modernAssessments.find(value=>value.dimension==='demand')).toMatchObject({classification:'unknown',strength:null});
+    expect(candidates[0]?.modernAssessments.find(value=>value.dimension==='serp_reality')).toMatchObject({classification:'unknown',strength:null});
     expect(candidates[0]?.profile.searchDemandHypothesis).toContain('UNKNOWN');
   });
 

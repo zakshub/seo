@@ -13,6 +13,8 @@ export class AppController {
   @Get('opportunities') async opportunities() { return this.db.opportunities(); }
   @Get('approvals') async approvals() { return this.db.approvals(); }
   @Get('market-studies') async marketStudies() { return this.db.marketStudies(); }
+  @Get('evidence-capabilities') async evidenceCapabilities() { return this.db.evidenceCapabilities(); }
+  @Get('open-source-tools') async openSourceTools() { return this.db.openSourceTools(); }
   @Post('workflows/research') async start(@Headers('x-local-owner-token') token: string | undefined, @Headers('idempotency-key') key: string | undefined, @Body() body: { language?:string; market?:string; brief?:string }) {
     const expected = process.env.LOCAL_OWNER_TOKEN;
     if (!isOwnerAuthenticated(expected,token)) throw new HttpException('Local owner authentication is required.', HttpStatus.UNAUTHORIZED);
@@ -33,6 +35,11 @@ export class AppController {
     if (!['approve','reject','request_changes'].includes(body.decision ?? '')) throw new HttpException('Decision must be approve, reject, or request_changes.',HttpStatus.BAD_REQUEST);
     if (!body.opportunityId) throw new HttpException('An opportunity must be selected.',HttpStatus.BAD_REQUEST);
     // The database transition requires this exact pending, scoped approval before project creation.
-    return this.db.decideApproval(id,body.decision as 'approve'|'reject'|'request_changes',body.opportunityId,body.note);
+    try {
+      return await this.db.decideApproval(id,body.decision as 'approve'|'reject'|'request_changes',body.opportunityId,body.note);
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('Phase 2 entry is blocked:')) throw new HttpException(error.message,HttpStatus.CONFLICT);
+      throw error;
+    }
   }
 }

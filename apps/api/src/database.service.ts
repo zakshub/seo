@@ -30,6 +30,7 @@ export class DatabaseService implements OnModuleDestroy {
       o.search_demand_hypothesis as "searchDemandHypothesis",o.search_intent as "searchIntent",o.search_surfaces as "searchSurfaces",
       o.geography_language as "geographyLanguage",o.product_type_hypothesis as "productTypeHypothesis",o.monetization_hypothesis as "monetizationHypothesis",
       o.traffic_potential as "trafficPotential",o.build_complexity as "buildComplexity",o.defensibility,o.risks,o.unknowns,o.confidence,o.recommendation,o.created_at as "createdAt",
+      o.phase2_readiness as "phase2Readiness",
       (select ar.id from approval_requests ar where ar.workflow_run_id=o.workflow_run_id and ar.state='pending' order by ar.created_at desc limit 1) as "approvalId",
       coalesce(json_agg(json_build_object('id',e.id,'sourceUrl',e.source_url,'capturedAt',e.captured_at,'reference',e.reference,'confidence',e.confidence)) filter (where e.id is not null),'[]') as evidence
       from opportunities o left join opportunity_evidence oe on oe.opportunity_id=o.id left join evidence_items e on e.id=oe.evidence_id
@@ -48,25 +49,39 @@ export class DatabaseService implements OnModuleDestroy {
       order by ms.created_at desc limit 20`);
     if (!studies.rows.length) return [];
     const ids=studies.rows.map((row:{id:string})=>row.id);
-    const [opportunities,findings,evidence] = await Promise.all([
+    const [opportunities,findings,evidence,providers] = await Promise.all([
       this.pool.query(`select id,market_study_id as "marketStudyId",title,rationale,scorecard,recommendation,confidence,unknowns,problem,audience,
         search_demand_hypothesis as "searchDemandHypothesis",search_intent as "searchIntent",product_type_hypothesis as "productTypeHypothesis",
-        monetization_hypothesis as "monetizationHypothesis",traffic_potential as "trafficPotential",build_complexity as "buildComplexity",defensibility,risks
+        monetization_hypothesis as "monetizationHypothesis",traffic_potential as "trafficPotential",build_complexity as "buildComplexity",defensibility,risks,
+        topic_clusters as "topicClusters",query_examples as "queryExamples",competitor_observations as "competitorObservations",content_gaps as "contentGaps",
+        tool_gaps as "toolGaps",product_formats as "productFormats",initial_information_architecture as "informationArchitecture",phase2_readiness as "phase2Readiness"
         from opportunities where market_study_id=any($1::uuid[]) order by (scorecard->>'total')::int desc`,[ids]),
       this.pool.query(`select id,market_study_id as "marketStudyId",opportunity_id as "opportunityId",dimension,classification,claim,evidence_ids as "evidenceIds",confidence
         from market_findings where market_study_id=any($1::uuid[]) order by created_at`,[ids]),
-      this.pool.query(`select oe.opportunity_id as "opportunityId",e.id,e.source_url as "sourceUrl",e.captured_at as "capturedAt",e.reference,e.confidence
+      this.pool.query(`select oe.opportunity_id as "opportunityId",e.id,e.source_url as "sourceUrl",e.captured_at as "capturedAt",e.reference,e.confidence,
+        e.provider_id as "providerId",e.capability,e.source_class as "sourceClass",e.subject,e.measurement,e.limitations
         from opportunity_evidence oe join evidence_items e on e.id=oe.evidence_id join opportunities o on o.id=oe.opportunity_id
-        where o.market_study_id=any($1::uuid[])`,[ids])
+        where o.market_study_id=any($1::uuid[])`,[ids]),
+      this.pool.query(`select market_study_id as "marketStudyId",provider_id as "providerId",capability,availability,reason,request_count as "requestCount",paid_cost_cents as "paidCostCents"
+        from market_study_provider_runs where market_study_id=any($1::uuid[]) order by provider_id`,[ids])
     ]);
     return studies.rows.map((study:{id:string})=>({
       ...study,
+      providers:providers.rows.filter((item:{marketStudyId:string})=>item.marketStudyId===study.id),
       opportunities:opportunities.rows.filter((item:{marketStudyId:string})=>item.marketStudyId===study.id).map((item:{id:string})=>({
         ...item,
         findings:findings.rows.filter((finding:{opportunityId?:string})=>finding.opportunityId===item.id),
         evidence:evidence.rows.filter((entry:{opportunityId:string})=>entry.opportunityId===item.id)
       }))
     }));
+  }
+  async evidenceCapabilities() {
+    const result=await this.pool.query(`select provider_id as "providerId",capability,availability,reason,request_count as "requestCount",paid_cost_cents as "paidCostCents",created_at as "createdAt" from market_study_provider_runs order by created_at desc`);
+    return result.rows;
+  }
+  async openSourceTools() {
+    const result=await this.pool.query(`select repository,name,categories,license,maintenance_status as "maintenanceStatus",security_concerns as "securityConcerns",runtime,integration_difficulty as "integrationDifficulty",recommendation,rationale,evidence_urls as "evidenceUrls",reviewed_at as "reviewedAt" from open_source_tool_reviews order by recommendation,name`);
+    return result.rows;
   }
   async decideApproval(id: string, decision: 'approve'|'reject'|'request_changes', opportunityId: string, note?: string) {
     const client = await this.pool.connect();
@@ -76,6 +91,10 @@ export class DatabaseService implements OnModuleDestroy {
       const row=approval.rows[0];
       if (!row) throw new Error('Approval is not pending or does not exist.');
       if (!row.inputSnapshot.candidateIds?.includes(opportunityId)) throw new Error('Selected opportunity is not part of this approval request.');
+      if (decision==='approve') {
+        const readiness=await client.query<{ready:boolean;blockers:string[]}>(`select coalesce((phase2_readiness->>'ready')::boolean,false) as ready,coalesce(phase2_readiness->'blockers','[]'::jsonb) as blockers from opportunities where id=$1`,[opportunityId]);
+        if (!readiness.rows[0]?.ready) throw new Error(`Phase 2 entry is blocked: ${(readiness.rows[0]?.blockers??['Required evidence is incomplete.']).join('; ')}`);
+      }
       const approvalState=decision==='approve'?'approved':decision==='reject'?'rejected':'changes_requested';
       await client.query('update approval_requests set state=$2 where id=$1',[id,approvalState]);
       await client.query(`insert into outbox_events(id,aggregate_type,aggregate_id,event_type,event_version,payload,occurred_at) values($1,'approval',$2,'approval.decided',1,$3::jsonb,now())`,[randomUUID(),id,JSON.stringify({decision,opportunityId,note:note?.slice(0,500)})]);
@@ -109,11 +128,11 @@ export class DatabaseService implements OnModuleDestroy {
       if (existing.rows[0]) { await client.query('commit'); return { ...existing.rows[0], idempotent: true }; }
       const runId = randomUUID(); const studyId=randomUUID(); const eventId = randomUUID(); const now = new Date().toISOString();
       await client.query(`insert into market_studies(id,workspace_id,brief,language,market,status,source_policy,paid_budget_cents,request_limit,time_limit_seconds)
-        values($1,$2,$3,'en','global','created','free_public_web',0,1,30)`,[studyId,WORKSPACE_ID,brief]);
+        values($1,$2,$3,'en','global','created','free_public_web',0,4,90)`,[studyId,WORKSPACE_ID,brief]);
       await client.query(`insert into workflow_runs(id,workspace_id,market_study_id,idempotency_key,state) values($1,$2,$3,$4,'created')`, [runId,WORKSPACE_ID,studyId,idempotencyKey]);
       await client.query(`insert into outbox_events(id,aggregate_type,aggregate_id,event_type,event_version,payload,occurred_at) values
         ($1,'market_study',$2,'market_study.created',1,$3::jsonb,$4),($5,'workflow',$6,'workflow.created',1,$7::jsonb,$4)`,
-        [randomUUID(),studyId,JSON.stringify({brief,language:'en',market:'global',sourcePolicy:'free_public_web',paidBudgetCents:0,requestLimit:1,timeLimitSeconds:30}),now,eventId,runId,JSON.stringify({marketStudyId:studyId,language:'en',market:'global',paidBudgetCents:0})]);
+        [randomUUID(),studyId,JSON.stringify({brief,language:'en',market:'global',sourcePolicy:'free_public_web',paidBudgetCents:0,requestLimit:4,timeLimitSeconds:90}),now,eventId,runId,JSON.stringify({marketStudyId:studyId,language:'en',market:'global',paidBudgetCents:0})]);
       await client.query('commit'); return { id: runId, marketStudyId:studyId, state: 'created', idempotent: false };
     } catch (error) { await client.query('rollback'); throw error; } finally { client.release(); }
   }

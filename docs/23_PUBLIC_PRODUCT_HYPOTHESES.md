@@ -24,3 +24,5 @@ Market Study `fe8ada8f-8ebb-4c71-ac36-81f056c57321` completed on 2026-10-04 usin
 - Broad site-position/SEO guidance diagnostic: source page reported 63,139 views and 26 answers.
 
 These are source-page engagement counts, not keyword volume or organic traffic. All three retain UNKNOWN search-surface demand, SERP weakness, and defensibility, so every recommendation is `RESEARCH_MORE`. None is approved as the public product.
+
+Phase 1.5 deliberately re-tests these families against broader capability evidence rather than treating the earlier three candidates as winners. Official Wikimedia article pageviews add language/topic-interest context, but live SERP, competitor, authorized search-demand and click-potential evidence remain required. “SEO Academy,” “Urdu SEO,” “free Ahrefs,” generic “SEO tools,” and “AI SEO” remain unvalidated hypotheses.

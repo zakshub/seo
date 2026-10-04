@@ -15,3 +15,5 @@ Known gap after `90ddf54`: an opportunity run had no first-class market-study br
 The complete verification evidence for the latest implementation is maintained in `PHASE_STATUS.md`; planned behavior is never recorded there as complete.
 
 Phase 1 verification subsequently applied migration `0003`, cold-started every local service, and completed Market Study `fe8ada8f-8ebb-4c71-ac36-81f056c57321`. The first cold-start attempt exposed a PostgreSQL readiness race; `scripts/dev.mjs` now waits for `pg_isready` before schema inspection or migration. A second cold start reported UI, API, PostgreSQL, and Temporal healthy.
+
+Phase 1.5 subsequently applied migration `0004` and completed real Market Study `60621e55-52d0-403e-8de1-ea12bba84dba`. Stack Exchange and Wikimedia observations are normalized separately from unavailable demand, Trends, SERP and first-party capabilities. Three product-format hypotheses were produced, but the Phase 2 gate rejected all because demand, SERP reality, competitors and click potential remain UNKNOWN. Project count remains zero.
