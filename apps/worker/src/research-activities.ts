@@ -51,7 +51,7 @@ export function buildCandidates(items: ResearchEvidence[], topicEvidence: Market
         : 'Small-site owners and SEO practitioners represented by the public Webmasters question audience.';
     const title = `${label} ${format}`;
     const topicClaim = topicEvidence.length
-      ? `${topicEvidence.map(item=>`${item.subject} (${item.language}: ${item.measurement.value?.toLocaleString('en-US')} Wikipedia pageviews/30d)`).join('; ')}. This is topic interest, not search demand.`
+      ? `${topicEvidence.map(item=>`${item.subject} (${item.language}: ${item.measurement.value?.toLocaleString('en-US')} Wikipedia pageviews; ${item.measurement.definition.toLowerCase()})`).join('; ')}. This is topic interest, not search demand.`
       : 'No permitted topic-interest observation was available.';
     candidates.push({
       title,
