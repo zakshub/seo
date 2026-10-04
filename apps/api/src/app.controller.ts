@@ -23,7 +23,7 @@ export class AppController {
     if (brief.length < 10 || brief.length > 2000) throw new HttpException('Study brief must be between 10 and 2000 characters.', HttpStatus.BAD_REQUEST);
     const run = await this.db.startResearch(key ?? randomUUID(),brief);
     if (!run.idempotent && run.state === 'created') {
-      const dispatch = await this.temporal.dispatchResearch(run.id,run.marketStudyId,brief);
+      const dispatch = await this.temporal.dispatchResearch(run.id,run.marketStudyId,brief,{paidBudgetCents:run.paidBudgetCents,budgetApprovalId:run.budgetApprovalId,braveMaxRequests:run.braveMaxRequests});
       if (dispatch.availability === 'available') await this.db.markDispatched(run.id, dispatch.workflowId);
       else await this.db.markDispatchUnavailable(run.id, dispatch.reason);
     }

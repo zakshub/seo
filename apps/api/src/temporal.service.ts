@@ -10,11 +10,11 @@ export class TemporalService implements OnModuleDestroy {
     try { const connection = await this.getConnection(); await connection.workflowService.getSystemInfo({}); return 'available'; }
     catch { return 'unavailable'; }
   }
-  async dispatchResearch(runId: string, marketStudyId: string, brief: string): Promise<DispatchResult> {
+  async dispatchResearch(runId:string,marketStudyId:string,brief:string,budget:{paidBudgetCents:number;budgetApprovalId?:string|undefined;braveMaxRequests:number}): Promise<DispatchResult> {
     try {
       const connection = await this.getConnection();
       const workflowId = `research-${runId}`;
-      await new Client({ connection }).workflow.start('researchWorkflow', { taskQueue: process.env.TEMPORAL_TASK_QUEUE ?? 'venture-research', workflowId, args: [{ runId, marketStudyId, brief, language: 'en', market: 'global' }] });
+      await new Client({ connection }).workflow.start('researchWorkflow', { taskQueue: process.env.TEMPORAL_TASK_QUEUE ?? 'venture-research', workflowId, args: [{ runId, marketStudyId, brief, language:'en', market:'global', ...budget }] });
       return { availability: 'available', workflowId };
     } catch { return { availability: 'unavailable', reason: 'Temporal dispatch is unavailable. The persisted run can be retried after the worker runtime is restored.' }; }
   }

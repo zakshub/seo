@@ -7,3 +7,5 @@ Also emit workflow lifecycle, agent status, approval, policy, provider availabil
 Phase 1.5 emits `provider.unavailable` separately for each missing capability, while `market_study.completed` and `opportunity.scored` include `phase2Ready: false` or the complete readiness result. An unavailable source is an event and provider-run record, not a successful observation.
 
 Provider attempt persistence distinguishes `available`, `partial`, `unavailable`, `blocked`, and `failed`. Duplicate Temporal activity delivery reuses the same provider-attempt idempotency key. Evidence conflicts and staleness are included in the scorecard result rather than overwritten or averaged away.
+
+Credentialed SERP execution adds `provider.rate_limited` with a sanitized retry delay. Raw provider bodies are evidence artifacts, not event payloads; activity events carry only safe identifiers, status and bounded explanations. Network and server errors persist as `failed` attempts.

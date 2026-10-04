@@ -11,8 +11,8 @@ Answer a narrower question truthfully: what public SEO product deserves further 
 | Problem signal | Stack Exchange Webmasters official API | Available | Public question wording and source-page engagement | Search volume, geography, SERP weakness, revenue |
 | Topic interest | Wikimedia Analytics official API | Available | Dated pageviews for specified Wikipedia articles/languages | Search demand, query volume, click potential |
 | Pakistan market context | World Bank Indicators API | Available | Dated national internet-adoption context | SEO demand, keyword volume, willingness to pay |
-| Live SERP | Brave Search API adapter | Unavailable without credential; budget-blocked even with a credential until approved | Country/language-targeted Brave positions after credentials and paid approval | Google rankings, page depth, backlink authority |
-| Search demand | Google Ads Keyword Planner adapter | Unavailable | Targeted historical Google Search estimates after credentials/approval | Guaranteed traffic or organic difficulty |
+| Live SERP | Brave Search API adapter | **ADAPTER READY / CREDENTIAL MISSING**; then **BUDGET APPROVAL MISSING** until explicitly scoped; `AVAILABLE` only after a successful approved request | Country/language-targeted Brave positions after credentials and paid approval | Google rankings, page depth, backlink authority |
+| Search demand | Provider-neutral adapter; DataForSEO Google Ads Search Volume Live recommended in ADR 0009 | Awaiting owner approval | Location/language-targeted Google Ads-derived history after credentials and a scoped budget | Guaranteed traffic or organic difficulty |
 | Trend interest | Google Trends API alpha | Unavailable | Nothing until access is verified | No value is estimated |
 | Keyword discovery | No approved demand API | Unavailable | Question titles are retained only as problem language | Volume, KD and rankings stay UNKNOWN |
 | Competitors | Depends on live result discovery and bounded crawl | Unavailable | Nothing | DR, DA, backlinks and traffic stay UNKNOWN |
@@ -25,6 +25,8 @@ The scorecard covers demand, intent, SERP reality, competitor quality, content/p
 The current authorized sources cannot satisfy those gates. The expected outcome is `RESEARCH_MORE`, not a selected project. The approval endpoint independently refuses project creation when `phase2_readiness.ready` is false; disabling the browser button is only a convenience.
 
 Evidence now records direct/proxy nature, geography, observation/capture times, freshness and confidence. Stale observations earn no coverage. Conflicting fresh evidence makes the dimension UNKNOWN. Provider attempts retain partial/failure states under an idempotency key. See ADR 0008.
+
+The Brave adapter is execution-ready but remains safely blocked. A live run requires a credential, an explicit budget approval ID, positive approved cents and a maximum request count. It captures ranked URLs/domains, result types, repeated domains, SERP features, inferred intent, bounded specialist/broad classification, raw response provenance and rate-limit metadata. It never labels snippet-only observations as page depth, authority or beatability.
 
 ## Open-source capability review
 

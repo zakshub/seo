@@ -21,7 +21,7 @@ export function MarketStudyControl() {
   return <div className="studyControl">
     <label htmlFor="study-brief">Research brief</label>
     <textarea id="study-brief" value={brief} maxLength={2000} onChange={event=>setBrief(event.target.value)} />
-    <div><small>English + Urdu topic check · Pakistan context · official/public evidence · 5-request ceiling · 90-second limit · $0 paid budget</small><button onClick={create} disabled={state==='working'||brief.trim().length<10}>{state==='working'?'Researching…':'Create Market Study'}</button></div>
+    <div><small>English + Urdu topic check · Pakistan context · official/public evidence · paid calls stay blocked unless an operator-configured approval and limit exist</small><button onClick={create} disabled={state==='working'||brief.trim().length<10}>{state==='working'?'Researching…':'Create Market Study'}</button></div>
     {state==='error'&&<em>Study could not start. Check System Health and try again.</em>}
     {state==='done'&&<em>Study was persisted and dispatched. Refreshing evidence view…</em>}
   </div>;

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildCandidates, stableUuid } from './research-activities.js';
 import type { ResearchEvidence } from '@venture/providers';
@@ -27,5 +28,17 @@ describe('market-study candidate construction', () => {
   it('uses deterministic identifiers so activity retries remain idempotent', () => {
     expect(stableUuid('same-run:event')).toBe(stableUuid('same-run:event'));
     expect(stableUuid('same-run:event')).not.toBe(stableUuid('other-run:event'));
+  });
+
+  it('persists paid-provider budget, failures, rate limits and raw SERP provenance through the activity contract',()=>{
+    const source=readFileSync(new URL('./research-activities.ts',import.meta.url),'utf8');
+    expect(source).toContain('input.budgetApprovalId');
+    expect(source).toContain('provider_run_attempts');
+    expect(source).toContain('estimated_cost_microusd');
+    expect(source).toContain("'provider.rate_limited'");
+    expect(source).toContain('provider_raw_artifacts');
+    expect(source).toContain('competitor_observations');
+    const workflow=readFileSync(new URL('./research-workflow.ts',import.meta.url),'utf8');
+    expect(workflow).toContain('maximumAttempts: 1');
   });
 });

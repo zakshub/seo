@@ -13,6 +13,18 @@ Last verified: 2026-10-04. Git references are added after the implementation com
 
 ## Latest verification
 
+### Brave SERP readiness and keyword-demand decision
+
+- Continuation start point: local and `origin/main` at `3881053`; the interrupted Phase 1.5 working tree was reviewed in place and the unrelated untracked lecture file was preserved.
+- Migration `0006_brave_serp_readiness.sql` applied cleanly to the existing database. Its live schema has the expanded attempt-status constraint, non-negative study budget, rate-limit/error/cost fields, raw-artifact table and bounded competitor-observation fields.
+- Brave state is **ADAPTER READY / CREDENTIAL MISSING**. It is not `AVAILABLE`. A credential alone would change the next blocker to **BUDGET APPROVAL MISSING**; only a real successful approved request may mark live SERP evidence available.
+- The adapter preflights a non-empty approval reference, positive cents, positive maximum request count, projected batch cost and request count before any egress. Temporal automatically retries the combined billable activity zero times (`maximumAttempts: 1`), so a failure cannot silently repeat a paid call beyond its approved boundary.
+- Contract coverage verifies missing credential, missing/zero approval, insufficient budget, excessive request count, normalized ranks/result types, repeated domains, SERP features, intent, bounded specialization, sanitized raw provenance, provider failure, rate limiting and retained partial batches.
+- Local no-credential study `5bbfd85f-413c-44cd-bd5e-716d637da497` persisted Brave as `unavailable` with zero requests, zero estimated/paid cost, no raw artifacts and no competitor rows. Its broad verification brief produced too few problem-source candidates, so the study honestly failed rather than fabricating three opportunities.
+- The Control Center renders `CREDENTIAL MISSING`, the provider limitation, and `Build remains locked`. `pnpm dev:status` reports UI, API, PostgreSQL and Temporal healthy.
+- ADR 0009 recommends exactly one initial demand provider: DataForSEO Google Ads Search Volume Live. It is proposed only—not implemented or called—and requires owner/provider/budget approval before development or credential use.
+- Final automated results: 43 tests passed across contracts, providers, API, database and worker; workspace typecheck passed; production build passed. Phase 2 remains **NOT STARTED**.
+
 - Continuation start point: local and `origin/main` at `c1196aa`; unrelated untracked lecture file preserved.
 - Migration `0005_evidence_quality_and_provider_attempts.sql` applied cleanly. It adds direct/proxy nature, observation and freshness times, geography, idempotent provider-run attempts, and bounded competitor-observation storage.
 - Real study: `2e116374-5e20-4767-8785-1ce9aa641613`; workflow `8153ad20-3626-4c24-99f7-b611a591bf70`; `awaiting_review` / `awaiting_approval`; zero paid cost; three `RESEARCH_MORE` candidates scoring 27, 23 and 23.
@@ -39,4 +51,4 @@ Last verified: 2026-10-04. Git references are added after the implementation com
 
 ## Current limitations
 
-The official Stack Exchange and Wikimedia observations supply public problem engagement and directional topic interest only. The World Bank observation supplies Pakistan digital-access context only. None validates Google search volume, keyword difficulty, SERP weakness/composition, competitor traffic/quality, backlink counts, click potential, commercial intent, authority requirements, defensibility, or product-market fit. The provider-independent Brave Search and Google Ads adapters are implemented, but are honestly unavailable without credentials and policy/budget approval; no call or metric substitution occurs. All candidates correctly recommend `RESEARCH_MORE`. No opportunity has been selected and Phase 2 has not started. Figma, LLM, analytics, Search Console, deployment, paid providers, revenue, and production infrastructure remain unconfigured.
+The official Stack Exchange and Wikimedia observations supply public problem engagement and directional topic interest only. The World Bank observation supplies Pakistan digital-access context only. None validates Google search volume, keyword difficulty, SERP weakness/composition, competitor traffic/quality, backlink counts, click potential, commercial intent, authority requirements, defensibility, or product-market fit. The provider-independent Brave Search adapter is **ADAPTER READY / CREDENTIAL MISSING**, while DataForSEO is only the proposed demand-provider decision; neither has produced evidence. No call or metric substitution occurs. All candidates correctly recommend `RESEARCH_MORE`. No opportunity has been selected and Phase 2 has not started. Figma, LLM, analytics, Search Console, deployment, paid providers, revenue, and production infrastructure remain unconfigured.

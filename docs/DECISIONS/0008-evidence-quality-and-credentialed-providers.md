@@ -10,7 +10,7 @@ Provider attempts are append-only and idempotent. Available, partial, unavailabl
 
 Brave Search is the selected live-search adapter because it exposes a documented search API with language and country targeting. It is a paid subscription product, so the zero-budget workflow blocks it even if a credential appears. Adding a key is insufficient: a positive, scoped budget approval is also required. Its ranking positions are Brave positions, not Google rankings.
 
-Google Ads Keyword Planner is the selected direct search-demand/commercial-intent adapter. It remains unavailable until approved developer-token, OAuth and customer access exist. Average monthly searches are targeted historical estimates; bid and advertising competition metrics are commercial-intent evidence, not organic difficulty.
+The earlier provisional selection of direct Google Ads Keyword Planner is superseded by the proposed practical recommendation in ADR 0009. The existing adapter remains dormant. No credential-dependent demand provider may execute until the owner approves one provider and a scoped budget. Average monthly searches remain targeted historical estimates; bid and advertising competition metrics are commercial-intent evidence, not organic difficulty.
 
 The World Bank Indicators API is enabled without credentials for Pakistan internet-adoption context. This is a geographic digital-access proxy only and cannot satisfy demand, click, SERP, competitor or commercial-intent gates.
 

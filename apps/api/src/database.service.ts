@@ -126,15 +126,21 @@ export class DatabaseService implements OnModuleDestroy {
       await client.query('begin');
       await client.query(`insert into workspaces(id, owner_id, name) values ($1,$2,'Owner Workspace') on conflict (id) do nothing`, [WORKSPACE_ID, OWNER_ID]);
       const existing = await client.query<{ id:string; state:string; marketStudyId:string }>('select id,state,market_study_id as "marketStudyId" from workflow_runs where workspace_id=$1 and idempotency_key=$2', [WORKSPACE_ID,idempotencyKey]);
-      if (existing.rows[0]) { await client.query('commit'); return { ...existing.rows[0], idempotent: true }; }
+      if (existing.rows[0]) { await client.query('commit'); return { ...existing.rows[0], idempotent:true,paidBudgetCents:0,budgetApprovalId:undefined,braveMaxRequests:0 }; }
       const runId = randomUUID(); const studyId=randomUUID(); const eventId = randomUUID(); const now = new Date().toISOString();
-      await client.query(`insert into market_studies(id,workspace_id,brief,language,market,status,source_policy,paid_budget_cents,request_limit,time_limit_seconds)
-        values($1,$2,$3,'en','global','created','free_public_web',0,5,90)`,[studyId,WORKSPACE_ID,brief]);
+      const budgetApprovalId=process.env.BRAVE_SEARCH_BUDGET_APPROVAL_ID?.trim()||undefined;
+      const configuredBudget=Number.parseInt(process.env.BRAVE_SEARCH_APPROVED_BUDGET_CENTS??'0',10);
+      const configuredRequests=Number.parseInt(process.env.BRAVE_SEARCH_MAX_REQUESTS??'0',10);
+      const paidBudgetCents=budgetApprovalId&&Number.isFinite(configuredBudget)&&configuredBudget>0?configuredBudget:0;
+      const braveMaxRequests=budgetApprovalId&&Number.isFinite(configuredRequests)&&configuredRequests>0?Math.min(configuredRequests,10):0;
+      const sourcePolicy=paidBudgetCents>0&&braveMaxRequests>0?'approved_provider':'free_public_web';
+      await client.query(`insert into market_studies(id,workspace_id,brief,language,market,status,source_policy,paid_budget_cents,paid_budget_approval_id,request_limit,time_limit_seconds)
+        values($1,$2,$3,'en','global','created',$4,$5,$6,5,90)`,[studyId,WORKSPACE_ID,brief,sourcePolicy,paidBudgetCents,budgetApprovalId??null]);
       await client.query(`insert into workflow_runs(id,workspace_id,market_study_id,idempotency_key,state) values($1,$2,$3,$4,'created')`, [runId,WORKSPACE_ID,studyId,idempotencyKey]);
       await client.query(`insert into outbox_events(id,aggregate_type,aggregate_id,event_type,event_version,payload,occurred_at) values
         ($1,'market_study',$2,'market_study.created',1,$3::jsonb,$4),($5,'workflow',$6,'workflow.created',1,$7::jsonb,$4)`,
-        [randomUUID(),studyId,JSON.stringify({brief,language:'en',market:'global',sourcePolicy:'free_public_web',paidBudgetCents:0,requestLimit:5,timeLimitSeconds:90}),now,eventId,runId,JSON.stringify({marketStudyId:studyId,language:'en',market:'global',paidBudgetCents:0})]);
-      await client.query('commit'); return { id: runId, marketStudyId:studyId, state: 'created', idempotent: false };
+        [randomUUID(),studyId,JSON.stringify({brief,language:'en',market:'global',sourcePolicy,paidBudgetCents,budgetApprovalId:budgetApprovalId??null,requestLimit:5,timeLimitSeconds:90}),now,eventId,runId,JSON.stringify({marketStudyId:studyId,language:'en',market:'global',paidBudgetCents,budgetApprovalId:budgetApprovalId??null})]);
+      await client.query('commit'); return { id:runId,marketStudyId:studyId,state:'created',idempotent:false,paidBudgetCents,budgetApprovalId,braveMaxRequests };
     } catch (error) { await client.query('rollback'); throw error; } finally { client.release(); }
   }
   private async transition(id: string, state: string, eventType: string, payload: object, temporalWorkflowId?: string) {
